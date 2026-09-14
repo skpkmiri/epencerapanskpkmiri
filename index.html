@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eSTANDARD 4 PdPc GPkhas</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="eSTANDARD 4 PdPc GPkhas">
+    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="manifest" id="manifest-placeholder">
+
+    <script>
+        const manifest = {
+            "name": "eSTANDARD 4 PdPc GPkhas",
+            "short_name": "eSTANDARD 4",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#eef2ff",
+            "theme_color": "#4f46e5",
+            "icons": [
+                { "src": "logo.png", "sizes": "192x192", "type": "image/png" },
+                { "src": "logo.png", "sizes": "512x512", "type": "image/png" }
+            ]
+        };
+        const manifestString = JSON.stringify(manifest);
+        
+        const swCode = `self.addEventListener('fetch', function(e) {});`;
+        const swBlob = new Blob([swCode], { type: 'application/javascript' });
+        const swUrl = URL.createObjectURL(swBlob);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('manifest-placeholder').setAttribute('href', 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(manifestString));
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register(swUrl).catch(err => console.log("PWA SW Register bypassed: ", err));
+            }
+        });
+    </script>
+    
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.1.9/Recharts.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4f46e5',   
+                        secondary: '#ec4899', 
+                        accent: '#8b5cf6',    
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #eef2ff; } 
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .score-radio:checked + div {
+            border-color: #4f46e5;
+            background-color: #4f46e5;
+            color: white;
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.3);
+            transform: scale(1.05);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body, html { background-color: white !important; overflow: visible !important; height: auto !important; }
+            #root { margin: 0; padding: 0; overflow: visible !important; height: auto !important; }
+            .print-break-inside-avoid { break-inside: avoid; }
+            .print-break-before { page-break-before: always; }
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased overflow-hidden">
+    <div id="root" class="h-screen w-full"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Konfigurasi Firebase anda
+        const firebaseConfig = {
+            apiKey: "AIzaSyArde5CLvL94HStkSQ9Gax1DpLehKJbu_I",
+            authDomain: "pencerapan-a297b.firebaseapp.com",
+            projectId: "pencerapan-a297b",
+            storageBucket: "pencerapan-a297b.firebasestorage.app",
+            messagingSenderId: "781107255735",
+            appId: "1:781107255735:web:3bd26f189d3b3406aeb032",
+            measurementId: "G-VR6P2S3SP8"
+        };
+        
+        try {
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            window.firebaseAPI = {
+                auth, db,
+                signInAnonymously,
+                collection, onSnapshot, doc, setDoc, deleteDoc
+            };
+            window.dispatchEvent(new Event('firebase-ready'));
+        } catch (e) {
+            console.error("Firebase init ralat:", e);
+        }
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
+
+        const INSTRUMENT_DATA = [
+            {
+                id: '4.1',
+                title: '4.1 GURU SEBAGAI PERANCANG',
+                subAspects: [
+                    {
+                        id: '4.1.1',
+                        title: '4.1.1 Guru merancang pelaksanaan PdPc secara profesional dan sistematik',
+                        items: [
+                            { id: '4.1.1.a', text: 'Menyediakan RPH yang mengandungi objektif yang boleh diukur dan aktiviti pembelajaran yang sesuai', scoring_profile: 'RUBRIC_4_1' },
+                            { id: '4.1.1.b', text: 'Menentukan kaedah pentaksiran', scoring_profile: 'RUBRIC_4_1' },
+                            { id: '4.1.1.c', text: 'Menyediakan ABM/BBM/BBB/TMK/Alat Sokongan', scoring_profile: 'RUBRIC_4_1' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: '4.2',
+                title: '4.2 GURU SEBAGAI PENGAWAL',
+                subAspects: [
+                    {
+                        id: '4.2.1',
+                        title: '4.2.1 Guru mengawal proses pembelajaran secara profesional dan terancang',
+                        items: [
+                            { id: '4.2.1.a', text: 'Mengelola isi pelajaran/skop pembelajaran yang dirancang', scoring_profile: 'RUBRIC_4_2_1' },
+                            { id: '4.2.1.b', text: 'Mengelola masa PdPc selaras dengan aktiviti pembelajaran', scoring_profile: 'RUBRIC_4_2_1' },
+                            { id: '4.2.1.c', text: 'Memberi peluang kepada penyertaan aktif murid', scoring_profile: 'RUBRIC_4_2_1' }
+                        ]
+                    },
+                    {
+                        id: '4.2.2',
+                        title: '4.2.2 Guru mengawal suasana pembelajaran secara profesional dan terancang',
+                        items: [
+                            { id: '4.2.2.a', text: 'Mengawasi komunikasi murid dalam PdPc', scoring_profile: 'RUBRIC_4_2_2' },
+                            { id: '4.2.2.b', text: 'Mengawasi perlakuan murid dalam PdPc', scoring_profile: 'RUBRIC_4_2_2' },
+                            { id: '4.2.2.c', text: 'Menyusun atur kedudukan murid', scoring_profile: 'RUBRIC_4_2_2' },
+                            { id: '4.2.2.d', text: 'Melaksanakan aktiviti pembelajaran yang menyeronokkan', scoring_profile: 'RUBRIC_4_2_2' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: '4.3',
+                title: '4.3 GURU SEBAGAI PEMBIMBING',
+                subAspects: [
+                    {
+                        id: '4.3.1',
+                        title: '4.3.1 Guru membimbing murid secara profesional dan terancang',
+                        items: [
+                            { id: '4.3.1.a', text: 'Memberi tunjuk ajar/tunjuk cara/panduan menguasai isi pelajaran/konsep/fakta berkaitan pelajaran', scoring_profile: 'RUBRIC_4_3' },
+                            { id: '4.3.1.b', text: 'Memberi tunjuk ajar/tunjuk cara/panduan menguasai kemahiran dalam aktiviti pembelajaran', scoring_profile: 'RUBRIC_4_3' },
+                            { id: '4.3.1.c', text: 'Membuat keputusan dan menyelesaikan masalah dalam aktiviti pembelajaran', scoring_profile: 'RUBRIC_4_3' },
+                            { id: '4.3.1.d', text: 'Menggunakan/memanfaatkan sumber pendidikan berkaitan pelajaran', scoring_profile: 'RUBRIC_4_3' },
+                            { id: '4.3.1.e', text: 'Menggabung/merentas/mengaitkan isi pelajaran dengan tajuk/unit/tema/nilai/kemahiran/mata pelajaran lain dalam aktiviti pembelajaran', scoring_profile: 'RUBRIC_4_3' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: '4.4',
+                title: '4.4 GURU SEBAGAI PENDORONG',
+                subAspects: [
+                    {
+                        id: '4.4.1',
+                        title: '4.4.1 Guru mendorong minda murid dalam melaksanakan aktiviti pembelajaran secara profesional dan terancang',
+                        items: [
+                            { id: '4.4.1.a', text: 'Merangsang murid berkomunikasi/bertindak balas dengan memberi reaksi dalam melaksanakan aktiviti', scoring_profile: 'RUBRIC_4_4_1' },
+                            { id: '4.4.1.b', text: 'Merangsang murid berkolaboratif dalam aktiviti pembelajaran mengikut keupayaan', scoring_profile: 'RUBRIC_4_4_1' },
+                            { id: '4.4.1.c', text: 'Mengemukakan soalan kepada murid untuk berfikir secara logik/mengemukakan idea', scoring_profile: 'RUBRIC_4_4_1' },
+                            { id: '4.4.1.d', text: 'Mengajukan soalan/mewujudkan situasi yang menjurus ke arah membuat keputusan/menyelesaikan masalah', scoring_profile: 'RUBRIC_4_4_1' },
+                            { id: '4.4.1.e', text: 'Mewujudkan peluang untuk murid memimpin', scoring_profile: 'RUBRIC_4_4_1' },
+                            { id: '4.4.1.f', text: 'Menggalakkan/merangsang murid mengemukakan soalan mudah berkaitan isi pelajaran', scoring_profile: 'RUBRIC_4_4_1' },
+                            { id: '4.4.1.g', text: 'Menggalakkan murid memperoleh pengetahuan dan kemahiran secara kendiri', scoring_profile: 'RUBRIC_4_4_1' }
+                        ]
+                    },
+                    {
+                        id: '4.4.2',
+                        title: '4.4.2 Guru mendorong emosi murid dalam melaksanakan aktiviti pembelajaran secara profesional dan terancang',
+                        items: [
+                            { id: '4.4.2.a', text: 'Memberi pujian/galakan terhadap perlakuan positif', scoring_profile: 'RUBRIC_4_4_2' },
+                            { id: '4.4.2.b', text: 'Memberi penghargaan terhadap hasil kerja/idea yang bermakna', scoring_profile: 'RUBRIC_4_4_2' },
+                            { id: '4.4.2.c', text: 'Memberi keyakinan dalam mengemukakan soalan/memberi respons', scoring_profile: 'RUBRIC_4_4_2' },
+                            { id: '4.4.2.d', text: 'Prihatin terhadap keperluan semasa murid', scoring_profile: 'RUBRIC_4_4_2' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: '4.5',
+                title: '4.5 GURU SEBAGAI PENILAI',
+                subAspects: [
+                    {
+                        id: '4.5.1',
+                        title: '4.5.1 Guru melaksanakan penilaian murid secara berterusan, profesional, sistematik dan terancang',
+                        items: [
+                            { id: '4.5.1.a', text: 'Menggunakan pelbagai kaedah pentaksiran dalam PdPc', scoring_profile: 'RUBRIC_4_5' },
+                            { id: '4.5.1.b', text: 'Menjalankan aktiviti pemulihan/pengayaan dalam PdPc', scoring_profile: 'RUBRIC_4_5' },
+                            { id: '4.5.1.c', text: 'Memberi latihan/tugasan berkaitan pelajaran', scoring_profile: 'RUBRIC_4_5' },
+                            { id: '4.5.1.d', text: 'Membuat refleksi PdPc', scoring_profile: 'RUBRIC_4_5' },
+                            { id: '4.5.1.e', text: 'Menyemak/menilai hasil kerja/gerak kerja/latihan/tugasan murid', scoring_profile: 'RUBRIC_4_5' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: '4.6',
+                title: '4.6 MURID SEBAGAI PEMBELAJAR AKTIF',
+                subAspects: [
+                    {
+                        id: '4.6.1',
+                        title: '4.6.1 Murid melibatkan diri dalam proses pembelajaran secara berterusan',
+                        items: [
+                            { id: '4.6.1.a', text: 'Memberi respons/kerjasama berkaitan isi pelajaran', scoring_profile: 'RUBRIC_4_6_ABC' },
+                            { id: '4.6.1.b', text: 'Berkomunikasi/bertindak balas dalam melaksanakan aktiviti pembelajaran', scoring_profile: 'RUBRIC_4_6_ABC' },
+                            { id: '4.6.1.c', text: 'Melaksanakan aktiviti pembelajaran secara kolaboratif', scoring_profile: 'RUBRIC_4_6_ABC' },
+                            { id: '4.6.1.d', text: 'Murid berfikir secara logik/kreatif/kritis', scoring_profile: 'RUBRIC_4_6_DE' },
+                            { id: '4.6.1.e', text: 'Mengemukakan soalan mudah berkaitan isi pelajaran', scoring_profile: 'RUBRIC_4_6_DE' },
+                            { id: '4.6.1.f', text: 'Mengaitkan isi pelajaran dengan kehidupan harian murid', scoring_profile: 'RUBRIC_4_6_DE' },
+                            { id: '4.6.1.g', text: 'Menyelesaikan masalah/tugas/latihan berkaitan aktiviti pembelajaran', scoring_profile: 'RUBRIC_4_6_DE' }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        const MOCK_SCORING_RUBRICS = {
+            'RUBRIC_4_1': {
+                4: 'i. mengikut pelbagai tahap kebolehan murid; ii. mengikut peruntukan masa; iii. mematuhi ketetapan',
+                3: 'dilaksanakan dengan mengambil kira perkara (i) dan (ii) atau (i) dan (iii)',
+                2: 'dilaksanakan dengan mengambil kira perkara (ii) dan (iii)',
+                1: 'dilaksanakan dengan mengambil kira mana-mana satu (1) perkara',
+                0: 'tidak mengambil kira mana-mana perkara'
+            },
+            'RUBRIC_4_2_1': {
+                4: 'Tindakan dilaksanakan: i. berdasarkan objektif; ii. mengikut pelbagai tahap kebolehan; iii. melibatkan interaksi.',
+                3: 'Tindakan dilaksanakan dengan mengambil kira perkara (i) dan (ii) atau (i) dan (iii).',
+                2: 'Tindakan dilaksanakan dengan mengambil kira perkara (ii) dan (iii).',
+                1: 'Tindakan dilaksanakan dengan mengambil kira mana-mana satu (1) perkara.',
+                0: 'Tidak mengambil kira mana-mana perkara.'
+            },
+            'RUBRIC_4_2_2': {
+                4: 'Tindakan dilaksanakan: i. secara berhemah; ii. secara menyeluruh; iii. secara berterusan.',
+                3: 'Tindakan dilaksanakan dengan mengambil kira perkara (i) dan (ii) atau (i) dan (iii).',
+                2: 'Tindakan dilaksanakan dengan mengambil kira perkara (ii) dan (iii).',
+                1: 'Tindakan dilaksanakan dengan mengambil kira mana-mana satu (1) perkara.',
+                0: 'Tidak mengambil kira mana-mana perkara.'
+            },
+            'RUBRIC_4_3': {
+                4: 'Tindakan dilaksanakan: i. dengan betul dan tepat; ii. mengikut tahap murid; iii. secara berhemah; iv. bersungguh-sungguh.',
+                3: 'Tindakan dilaksanakan dengan mengambil kira perkara (i) dan mana-mana dua (2) perkara.',
+                2: 'Tindakan dilaksanakan dengan mengambil kira perkara (i) dan mana-mana satu (1) perkara.',
+                1: 'Tindakan dilaksanakan dengan mengambil kira perkara (i).',
+                0: 'Tidak mengambil kira mana-mana perkara.'
+            },
+            'RUBRIC_4_4_1': {
+                4: 'Tindakan dilaksanakan: i. menepati objektif; ii. mengikut pelbagai tahap kebolehan murid; iii. secara berterusan.',
+                3: 'Tindakan dilaksanakan dengan mengambil kira perkara (i) dan (ii) atau (i) dan (iii).',
+                2: 'Tindakan dilaksanakan dengan mengambil kira perkara (ii) dan (iii).',
+                1: 'Tindakan dilaksanakan dengan mengambil kira mana-mana satu (1) perkara.',
+                0: 'Tidak mengambil kira mana-mana perkara.'
+            },
+            'RUBRIC_4_4_2': {
+                4: 'Tindakan dilaksanakan: i. dengan ikhlas dan bermakna, ii. amat bersesuaian, iii. secara berterusan.',
+                3: 'Tindakan dilaksanakan: memenuhi mana-mana DUA (2) perkara di atas.',
+                2: 'Tindakan dilaksanakan: memenuhi mana-mana SATU (1) perkara di atas.',
+                1: 'Tindakan dilaksanakan secara minimum dan jarang-jarang.',
+                0: 'Tiada tindakan mendorong emosi dilaksanakan.'
+            },
+            'RUBRIC_4_5': {
+                4: 'Tindakan dilaksanakan: i. berdasarkan objektif; ii. mengikut ketetapan; iii. secara menyeluruh; iv. secara fleksibel.',
+                3: 'Tindakan dilaksanakan dengan mengambil kira perkara (i) dan mana-mana dua (2) perkara.',
+                2: 'Tindakan dilaksanakan dengan mengambil kira perkara (i) dan mana-mana satu (1) perkara.',
+                1: 'Tindakan dilaksanakan dengan mengambil kira perkara (i).',
+                0: 'Tidak mengambil kira mana-mana perkara.'
+            },
+            'RUBRIC_4_6_ABC': {
+                4: 'Tindakan dilaksanakan: i. pelibatan 90%-100%; ii. selaras objektif; iii. dengan yakin; iv. secara berhemah.',
+                3: 'Tindakan dilaksanakan: i. pelibatan 80%-89%; ii. memenuhi sekurang-kurangnya dua (2) perkara.',
+                2: 'Tindakan dilaksanakan: i. pelibatan 50%-79%; ii. memenuhi sekurang-kurangnya satu (1) perkara.',
+                1: 'Tindakan dilaksanakan: i. pelibatan 1%-49%; ii. memenuhi sekurang-kurangnya satu (1) perkara.',
+                0: 'Tidak mengambil kira mana-mana perkara.'
+            },
+            'RUBRIC_4_6_DE': {
+                4: 'Tindakan dilaksanakan: i. pelibatan 50%-100%; ii. selaras objektif; iii. dengan yakin; iv. secara berhemah.',
+                3: 'Tindakan dilaksanakan: i. pelibatan 25%-49%; ii. memenuhi sekurang-kurangnya dua (2) perkara.',
+                2: 'Tindakan dilaksanakan: i. pelibatan 10%-24%; ii. memenuhi sekurang-kurangnya satu (1) perkara.',
+                1: 'Tindakan dilaksanakan: i. pelibatan <10%; ii. memenuhi sekurang-kurangnya satu (1) perkara.',
+                0: 'Tidak mengambil kira mana-mana perkara.'
+            }
+        };
+
+        const getDescriptorText = (profile, score) => {
+            if (MOCK_SCORING_RUBRICS[profile] && MOCK_SCORING_RUBRICS[profile][score]) {
+                return MOCK_SCORING_RUBRICS[profile][score];
+            }
+            return 'Deskriptor tidak ditemui.';
+        };
+
+        const generateUUID = () => crypto.randomUUID ? crypto.randomUUID() : 'uuid-' + Math.random().toString(36).substr(2, 9);
+
+        const MOCK_TEACHERS = [
+            { id: 'T001', user_id: null, school_id: 'S001', teacher_name: 'Guru Lalai 1', staff_id: 'STF001', ic_no: '-', position: 'Guru Penolong', option: 'Pendidikan Khas', specialization: 'Masalah Pendengaran', class_name: '2 Amanah', subject: 'Bahasa Melayu', is_active: true, sort_order: 1 }
+        ];
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+            
+            const [db, setDb] = useState({
+                observations: [],
+                observation_scores: [],
+                follow_up_actions: [],
+                audit_logs: [],
+                teachers: MOCK_TEACHERS 
+            });
+            const [isCloudReady, setIsCloudReady] = useState(false);
+            const [viewingReport, setViewingReport] = useState(null);
+            const [toastMessage, setToastMessage] = useState(null);
+
+            const currentUser = { id: generateUUID(), email: 'abidin@sekolah.edu.my', full_name: 'Mohamad Abidin bin Sipek (GPK Pentadbiran)', role: 'PENTADBIR', school_id: 'S001', is_active: true };
+
+            useEffect(() => {
+                const initCloud = async () => {
+                    if (!window.firebaseAPI) return;
+                    const { auth, signInAnonymously } = window.firebaseAPI;
+                    
+                    try {
+                        await signInAnonymously(auth);
+                        setIsCloudReady(true);
+                    } catch (error) {
+                        console.error("Auth Ralat. Pastikan Anonymous Login diaktifkan dalam Firebase Console:", error);
+                        setToastMessage({ type: 'error', text: 'Gagal menyambung. Aktifkan Anonymous Auth di Firebase.' });
+                    }
+                };
+
+                if (window.firebaseAPI) initCloud();
+                else window.addEventListener('firebase-ready', initCloud);
+                
+                return () => window.removeEventListener('firebase-ready', initCloud);
+            }, []);
+
+            useEffect(() => {
+                if (!isCloudReady || !window.firebaseAPI || !window.firebaseAPI.auth.currentUser) return;
+                
+                const { db: fireDB, collection, onSnapshot, doc: fireDoc, setDoc } = window.firebaseAPI;
+                
+                const obsRef = collection(fireDB, 'observations');
+                const logsRef = collection(fireDB, 'audit_logs');
+                const teachersRef = collection(fireDB, 'teachers');
+
+                const unsubObs = onSnapshot(obsRef, (snapshot) => {
+                    const data = snapshot.docs.map(doc => doc.data());
+                    data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    setDb(prev => ({ ...prev, observations: data }));
+                }, (err) => console.error(err));
+
+                const unsubLogs = onSnapshot(logsRef, (snapshot) => {
+                    const data = snapshot.docs.map(doc => doc.data());
+                    data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    setDb(prev => ({ ...prev, audit_logs: data }));
+                }, (err) => console.error(err));
+
+                const unsubTeachers = onSnapshot(teachersRef, async (snapshot) => {
+                    let data = snapshot.docs.map(doc => doc.data());
+                    if (data.length > 0) {
+                        data.sort((a, b) => {
+                            return (a.sort_order || 0) - (b.sort_order || 0);
+                        });
+                        setDb(prev => ({ ...prev, teachers: data }));
+                    } else {
+                        try {
+                            const res = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQlw9DX7KTwL6BBPxhAUJ6TWAwfNVylx_wC6FuE2LgJE588pMkmZZegTtjnbFVU7FHwYYZ5EEOvYOen/pub?output=csv");
+                            if (res.ok) {
+                                const csvText = await res.text();
+                                const rows = csvText.split('\n');
+                                const headers = rows[0].split(',');
+                                
+                                const nameIdx = headers.findIndex(h => h.toLowerCase().includes('nama'));
+                                const icIdx = headers.findIndex(h => h.toLowerCase().includes('ic') || h.toLowerCase().includes('kp'));
+                                const posIdx = headers.findIndex(h => h.toLowerCase().includes('jawatan'));
+                                const optIdx = headers.findIndex(h => h.toLowerCase().includes('opsyen'));
+
+                                const csvTeachers = [];
+                                for (let i = 1; i < rows.length; i++) {
+                                    if (!rows[i].trim()) continue;
+                                    const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                                    if (cols.length > nameIdx && cols[nameIdx]) {
+                                        const rawName = cols[nameIdx].replace(/['"\r]/g, '').replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+                                        if (rawName.length > 3) {
+                                            const newTeacher = {
+                                                id: 'T' + generateUUID().substring(0,6),
+                                                user_id: null,
+                                                school_id: 'S001',
+                                                teacher_name: rawName,
+                                                staff_id: 'STF-' + i,
+                                                ic_no: icIdx !== -1 && cols[icIdx] ? cols[icIdx].replace(/['"\r]/g, '').trim() : '-',
+                                                position: posIdx !== -1 && cols[posIdx] ? cols[posIdx].replace(/['"\r]/g, '').trim() : 'Guru',
+                                                option: optIdx !== -1 && cols[optIdx] ? cols[optIdx].replace(/['"\r]/g, '').trim() : '-',
+                                                specialization: '-',
+                                                class_name: '-',
+                                                subject: '-',
+                                                is_active: true,
+                                                sort_order: i 
+                                            };
+                                            csvTeachers.push(newTeacher);
+                                            setDoc(fireDoc(fireDB, 'teachers', newTeacher.id), newTeacher);
+                                        }
+                                    }
+                                }
+                                if (csvTeachers.length > 0) {
+                                    setDb(prev => ({ ...prev, teachers: csvTeachers }));
+                                    return;
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Gagal baca CSV Google Sheets, gunakan Mock data:", e);
+                        }
+                        
+                        MOCK_TEACHERS.forEach(t => {
+                            setDoc(fireDoc(fireDB, 'teachers', t.id), t);
+                        });
+                    }
+                }, (err) => console.error(err));
+
+                return () => {
+                    unsubObs(); unsubLogs(); unsubTeachers();
+                };
+            }, [isCloudReady]);
+
+            const calculatePerformanceLevel = (percentage) => {
+                if (percentage >= 85) return 'CEMERLANG';
+                if (percentage >= 70) return 'BAIK';
+                if (percentage >= 55) return 'SEDERHANA';
+                return 'PERLU TINDAKAN SEGERA';
+            };
+
+            const calculateColor = (grade) => {
+                if (grade === 'CEMERLANG') return 'text-success';
+                if (grade === 'BAIK') return 'text-secondary';
+                if (grade === 'SEDERHANA') return 'text-warning';
+                return 'text-danger';
+            };
+
+            const logAudit = async (action, tableName, recordId, newData, oldData = null) => {
+                const logId = generateUUID();
+                const logEntry = {
+                    id: logId,
+                    user_id: currentUser.id,
+                    action: action,
+                    table_name: tableName,
+                    record_id: recordId,
+                    new_data: newData,
+                    old_data: oldData,
+                    created_at: new Date().toISOString(),
+                    userName: currentUser.full_name
+                };
+                
+                setDb(prev => ({ ...prev, audit_logs: [logEntry, ...prev.audit_logs] }));
+                
+                if (isCloudReady && window.firebaseAPI) {
+                    const { db: fireDB, doc: fireDoc, setDoc } = window.firebaseAPI;
+                    try {
+                        await setDoc(fireDoc(fireDB, 'audit_logs', logId), logEntry);
+                    } catch (e) {
+                        console.error("Gagal sync audit log", e);
+                    }
+                }
+            };
+
+            const handleSaveObservation = async (obsData) => {
+                const obsId = generateUUID();
+                
+                const newObservation = {
+                    id: obsId,
+                    school_id: currentUser.school_id,
+                    teacher_id: obsData.teacher_id,
+                    observer_id: currentUser.id,
+                    observer_name: obsData.observer_name, 
+                    observation_date: obsData.observation_date,
+                    session_name: obsData.session_name,
+                    class_name: obsData.class_name,
+                    subject: obsData.subject,
+                    topic: obsData.topic,
+                    learning_objectives: obsData.learning_objectives,
+                    student_count: parseInt(obsData.student_count) || 0,
+                    start_time: obsData.start_time,
+                    end_time: obsData.end_time,
+                    status: 'COMPLETED',
+                    total_score: obsData.totalScore,
+                    maximum_score: 152.00,
+                    percentage: obsData.percentageFloat,
+                    performance_level: obsData.performance_level,
+                    general_comment: obsData.general_comment,
+                    teacher_comment: null,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    teacherName: obsData.teacherName,
+                    scores: obsData.scores
+                };
+
+                if (isCloudReady && window.firebaseAPI) {
+                    const { db: fireDB, doc: fireDoc, setDoc } = window.firebaseAPI;
+                    try {
+                        await setDoc(fireDoc(fireDB, 'observations', obsId), newObservation);
+                        logAudit('CREATE', 'observations', obsId, newObservation);
+                        
+                        setToastMessage({ type: 'success', text: 'Rekod berjaya disimpan ke awan!' });
+                        setTimeout(() => setToastMessage(null), 3000);
+                        setActiveTab('history');
+                    } catch (e) {
+                        console.error("Gagal sync pencerapan", e);
+                        setToastMessage({ type: 'error', text: 'Ralat menyimpan data ke awan.' });
+                    }
+                } else {
+                    setDb(prev => ({ ...prev, observations: [newObservation, ...prev.observations] }));
+                    logAudit('CREATE', 'observations', obsId, newObservation);
+                    setToastMessage({ type: 'success', text: 'Disimpan (Mod Offline). Penyegerakan tertunda.' });
+                    setTimeout(() => setToastMessage(null), 3000);
+                    setActiveTab('history');
+                }
+            };
+
+            const DashboardContent = () => {
+                const stats = useMemo(() => {
+                    const total = db.observations.length;
+                    if (total === 0) return { total: 0, avgScore: 0, cemerlang: 0 };
+                    
+                    const avg = db.observations.reduce((sum, obs) => sum + obs.percentage, 0) / total;
+                    const cemerlangCount = db.observations.filter(o => o.performance_level === 'CEMERLANG').length;
+                    
+                    return {
+                        total,
+                        avgScore: avg.toFixed(2),
+                        cemerlang: cemerlangCount
+                    };
+                }, [db.observations]);
+
+                const getChartData = (sessionType) => {
+                    return db.observations
+                        .filter(o => o.session_name === sessionType)
+                        .map(o => ({
+                            name: o.teacherName.split(' ')[0], 
+                            score: parseFloat(o.percentage).toFixed(1),
+                            date: o.observation_date
+                        }));
+                };
+
+                const chartConfigs = [
+                    { title: "Trend Pencapaian (Pencerapan Kendiri)", data: getChartData("Pencerapan Kendiri"), color: "#8b5cf6" },
+                    { title: "Trend Pencapaian (Pencerapan Pertama)", data: getChartData("Pencerapan Pertama"), color: "#ec4899" },
+                    { title: "Trend Pencapaian (Pencerapan Kedua)", data: getChartData("Pencerapan Kedua"), color: "#4f46e5" },
+                    { title: "Trend Pencapaian (Pencerapan Berkala)", data: getChartData("Pencerapan Berkala"), color: "#10b981" }
+                ];
+
+                return (
+                    <div className="p-4 md:p-8 animate-fade-in pb-24 max-w-7xl mx-auto">
+                        <div className="mb-6">
+                            <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Dashboard Pencerapan</h2>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div className="bg-gradient-to-br from-indigo-50 to-purple-100 p-6 rounded-2xl shadow-md border border-indigo-200 flex items-center gap-5 transition-transform hover:-translate-y-1">
+                                <div className="w-14 h-14 rounded-full bg-indigo-500 flex items-center justify-center text-white shadow-inner">
+                                    <i className="ph ph-file-text text-3xl"></i>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-indigo-800 mb-1">Jumlah Pencerapan</p>
+                                    <h3 className="text-3xl font-black text-indigo-950">{stats.total}</h3>
+                                </div>
+                            </div>
+                            <div className="bg-gradient-to-br from-fuchsia-50 to-pink-100 p-6 rounded-2xl shadow-md border border-fuchsia-200 flex items-center gap-5 transition-transform hover:-translate-y-1">
+                                <div className="w-14 h-14 rounded-full bg-fuchsia-500 flex items-center justify-center text-white shadow-inner">
+                                    <i className="ph ph-chart-line-up text-3xl"></i>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-fuchsia-800 mb-1">Purata Pencapaian</p>
+                                    <h3 className="text-3xl font-black text-fuchsia-950">{stats.avgScore}%</h3>
+                                </div>
+                            </div>
+                            <div className="bg-gradient-to-br from-emerald-50 to-teal-100 p-6 rounded-2xl shadow-md border border-teal-200 flex items-center gap-5 transition-transform hover:-translate-y-1">
+                                <div className="w-14 h-14 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-inner">
+                                    <i className="ph ph-medal text-3xl"></i>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-emerald-800 mb-1">Tahap Cemerlang</p>
+                                    <h3 className="text-3xl font-black text-emerald-950">{stats.cemerlang} <span className="text-sm font-bold text-emerald-700">Guru</span></h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                            {chartConfigs.map((config, idx) => (
+                                <div key={idx} className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-indigo-100 h-72 flex flex-col">
+                                    <h3 className="font-black text-sm text-indigo-900 mb-6">{config.title}</h3>
+                                    <div className="flex-1 w-full h-full">
+                                        {config.data.length > 0 ? (
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={config.data} margin={{top: 5, right: 5, left: -20, bottom: 20}}>
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                                    <XAxis dataKey="name" tick={{fontSize: 10, fill: '#6b7280', fontWeight: 'bold'}} axisLine={false} tickLine={false} dy={10} />
+                                                    <YAxis domain={[0, 100]} tick={{fontSize: 10, fill: '#6b7280', fontWeight: 'bold'}} axisLine={false} tickLine={false} dx={-10} ticks={[0, 25, 50, 75, 100]} />
+                                                    <Tooltip cursor={{fill: '#f3f4f6'}} contentStyle={{borderRadius: '12px', border: '1px solid #e0e7ff', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', fontSize: '12px', fontWeight: 'bold'}} />
+                                                    <Bar dataKey="score" fill={config.color} radius={[6,6,0,0]} name="Markah (%)" barSize={32} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full text-indigo-300 text-xs font-bold flex-col gap-2 opacity-60">
+                                                <i className="ph ph-chart-bar text-3xl mb-1"></i> Tiada Data
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            };
+
+            const NewObservationContent = () => {
+                const totalItems = 38; 
+                const maxPossibleScore = totalItems * 4;
+
+                const [formData, setFormData] = useState({
+                    teacher_id: '',
+                    observer_name: '', 
+                    observation_date: new Date().toISOString().split('T')[0],
+                    session_name: 'Pencerapan Pertama',
+                    class_name: '',
+                    subject: '',
+                    topic: '',
+                    learning_objectives: '',
+                    student_count: '',
+                    start_time: '08:00',
+                    end_time: '09:00',
+                    general_comment: ''
+                });
+
+                const [scores, setScores] = useState({});
+
+                const handleFormChange = (e) => {
+                    setFormData({ ...formData, [e.target.name]: e.target.value });
+                };
+
+                const handleScoreChange = (itemId, score) => {
+                    setScores(prev => ({ ...prev, [itemId]: score }));
+                };
+
+                const currentTotalScore = Object.values(scores).reduce((acc, curr) => acc + curr, 0);
+                const answeredItemsCount = Object.keys(scores).length;
+                const percentage = answeredItemsCount === totalItems 
+                    ? ((currentTotalScore / maxPossibleScore) * 100).toFixed(2) 
+                    : '0.00';
+                
+                const performanceLevel = calculatePerformanceLevel(parseFloat(percentage));
+
+                const handleSubmit = (e) => {
+                    e.preventDefault();
+                    if (answeredItemsCount < totalItems) {
+                        setToastMessage({ type: 'warning', text: `Sila lengkapkan semua rubrik. Anda baru menjawab ${answeredItemsCount}/${totalItems} item.`});
+                        setTimeout(() => setToastMessage(null), 3000);
+                        return;
+                    }
+                    const teacher = db.teachers.find(t => t.id === formData.teacher_id);
+                    
+                    handleSaveObservation({
+                        ...formData,
+                        teacherName: teacher.teacher_name,
+                        scores: scores,
+                        totalScore: currentTotalScore,
+                        percentageFloat: parseFloat(percentage),
+                        performance_level: performanceLevel
+                    });
+                };
+
+                return (
+                    <div className="p-4 md:p-8 animate-fade-in relative pb-32 max-w-5xl mx-auto">
+                        
+                        <div className="flex justify-between items-end mb-6 pb-2">
+                            <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Borang Pencerapan PdPc Baharu</h2>
+                            <span className="text-sm text-indigo-600 font-bold bg-indigo-100 px-3 py-1 rounded-full shadow-sm">eSTANDARD 4 PdPc GPkhas</span>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-8">
+                            
+                            <div className="bg-white/90 backdrop-blur p-6 rounded-2xl shadow-sm border border-indigo-100">
+                                <h3 className="text-md font-black text-primary mb-4 flex items-center gap-2">
+                                    <i className="ph ph-info text-xl text-accent"></i> Maklumat Asas
+                                </h3>
+                                
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-indigo-900 mb-1">Nama Guru <span className="text-red-500">*</span></label>
+                                            <select name="teacher_id" value={formData.teacher_id} onChange={handleFormChange} required className="w-full border border-indigo-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-indigo-50/30">
+                                                <option value="">-- Pilih Guru --</option>
+                                                {db.teachers.map(t => (
+                                                    <option key={t.id} value={t.id}>{t.teacher_name} ({t.option})</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-indigo-900 mb-1">Guru Pencerap <span className="text-red-500">*</span></label>
+                                            <select name="observer_name" value={formData.observer_name} onChange={handleFormChange} required className="w-full border border-indigo-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-indigo-50/30">
+                                                <option value="">-- Pilih Guru Pencerap --</option>
+                                                <option value="AZIZ BIN TAHIR">AZIZ BIN TAHIR</option>
+                                                <option value="MOHAMAD ABIDIN BIN SIPEK">MOHAMAD ABIDIN BIN SIPEK</option>
+                                                <option value="LING MEE CHOO">LING MEE CHOO</option>
+                                                <option value="SALIHIN BIN AHMAD">SALIHIN BIN AHMAD</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-indigo-900 mb-1">Tarikh</label>
+                                            <input type="date" name="observation_date" value={formData.observation_date} onChange={handleFormChange} required className="w-full border border-indigo-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-indigo-50/30" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-indigo-900 mb-1">Sesi</label>
+                                            <select name="session_name" value={formData.session_name} onChange={handleFormChange} required className="w-full border border-indigo-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-indigo-50/30">
+                                                <option value="Pencerapan Kendiri">Pencerapan Kendiri</option>
+                                                <option value="Pencerapan Pertama">Pencerapan Pertama</option>
+                                                <option value="Pencerapan Kedua">Pencerapan Kedua</option>
+                                                <option value="Pencerapan Berkala">Pencerapan Berkala</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-indigo-900 mb-1">Kelas</label>
+                                            <input type="text" name="class_name" value={formData.class_name} onChange={handleFormChange} required placeholder="Cth: 2 Amanah" className="w-full border border-indigo-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-indigo-50/30" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-indigo-900 mb-1">Mata Pelajaran</label>
+                                            <input type="text" name="subject" value={formData.subject} onChange={handleFormChange} required placeholder="Cth: Bahasa Melayu" className="w-full border border-indigo-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-indigo-50/30" />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-indigo-900 mb-1">Topik/Tajuk</label>
+                                        <input type="text" name="topic" value={formData.topic} onChange={handleFormChange} required placeholder="Tajuk PdPc hari ini" className="w-full border border-indigo-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-indigo-50/30" />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-indigo-900 mb-1">Bil. Murid</label>
+                                            <input type="number" name="student_count" value={formData.student_count} onChange={handleFormChange} required className="w-full border border-indigo-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-indigo-50/30" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-indigo-900 mb-1">Masa Mula</label>
+                                            <div className="relative">
+                                                <input type="time" name="start_time" value={formData.start_time} onChange={handleFormChange} required className="w-full border border-indigo-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-indigo-50/30 pr-10" />
+                                                <i className="ph ph-clock absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 text-lg"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-indigo-900 mb-1">Masa Tamat</label>
+                                            <div className="relative">
+                                                <input type="time" name="end_time" value={formData.end_time} onChange={handleFormChange} required className="w-full border border-indigo-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-indigo-50/30 pr-10" />
+                                                <i className="ph ph-clock absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 text-lg"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-8 mb-6">
+                                <h3 className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary mb-2">Instrumen eSTANDARD 4 PdPc GPkhas</h3>
+                                <div className="h-1 w-full bg-gradient-to-r from-primary via-accent to-secondary rounded-full"></div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {INSTRUMENT_DATA.map((aspect) => (
+                                    <div key={aspect.id} className="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-visible transition-all hover:shadow-md">
+                                        <div className="bg-gradient-to-r from-primary to-accent text-white p-4 rounded-t-2xl shadow-sm">
+                                            <h3 className="text-sm font-bold tracking-wide">{aspect.title}</h3>
+                                        </div>
+                                        <div className="p-0">
+                                            {aspect.subAspects.map((sub, idx) => (
+                                                <div key={sub.id} className={`${idx !== aspect.subAspects.length - 1 ? 'border-b border-indigo-50' : ''}`}>
+                                                    <div className="bg-indigo-50/50 p-3 border-b border-indigo-100">
+                                                        <h4 className="font-bold text-indigo-900 text-sm">{sub.title}</h4>
+                                                    </div>
+                                                    
+                                                    <div className="p-4 md:p-6 space-y-6">
+                                                        {sub.items.map((item) => (
+                                                            <div key={item.id} className="pb-6 border-b border-indigo-50 border-dashed last:border-0 last:pb-0">
+                                                                <p className="font-semibold text-indigo-950 mb-4 text-sm leading-relaxed"><span className="text-accent font-black mr-1">{item.id}</span> {item.text}</p>
+                                                                
+                                                                <div className="flex gap-4">
+                                                                    {[0, 1, 2, 3, 4].map(scoreValue => (
+                                                                        <label key={scoreValue} className="relative cursor-pointer group">
+                                                                            <input 
+                                                                                type="radio" 
+                                                                                name={`item_${item.id}`} 
+                                                                                value={scoreValue}
+                                                                                checked={scores[item.id] === scoreValue}
+                                                                                onChange={() => handleScoreChange(item.id, scoreValue)}
+                                                                                className="peer sr-only score-radio"
+                                                                            />
+                                                                            <div className="w-10 h-10 rounded-full border-2 border-indigo-200 bg-white flex items-center justify-center text-indigo-400 font-bold transition-all hover:border-primary hover:text-primary shadow-sm">
+                                                                                {scoreValue}
+                                                                            </div>
+                                                                        </label>
+                                                                    ))}
+                                                                </div>
+                                                                
+                                                                {scores[item.id] !== undefined && (
+                                                                    <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl text-sm text-indigo-900 animate-fade-in flex gap-3 shadow-inner">
+                                                                        <i className="ph ph-info text-accent text-xl flex-shrink-0"></i>
+                                                                        <div>
+                                                                            <span className="font-black text-accent block mb-1">Huraian Skor {scores[item.id]}</span>
+                                                                            <p className="leading-relaxed font-medium">{getDescriptorText(item.scoring_profile, scores[item.id])}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="bg-white/90 backdrop-blur p-6 rounded-2xl shadow-sm border border-indigo-100">
+                                <h3 className="text-md font-black text-primary mb-4 flex items-center gap-2">
+                                    <i className="ph ph-chat-text text-xl text-accent"></i> Ulasan Keseluruhan
+                                </h3>
+                                <textarea 
+                                    name="general_comment" 
+                                    value={formData.general_comment} 
+                                    onChange={handleFormChange} 
+                                    rows="3" 
+                                    className="w-full border border-indigo-200 rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-indigo-50/30" 
+                                    placeholder="Nyatakan kekuatan, kelemahan, dan cadangan penambahbaikan..."
+                                ></textarea>
+                            </div>
+                            
+                            <div className="h-10"></div>
+
+                            <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-white/95 backdrop-blur-md border-t border-indigo-100 px-6 py-4 shadow-[0_-15px_25px_-5px_rgba(0,0,0,0.1)] z-40 flex flex-col md:flex-row justify-between items-center gap-4">
+                                <div className="flex items-center gap-8">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Item Dinilai</span>
+                                        <span className="font-black text-base text-indigo-900">{answeredItemsCount} <span className="text-sm font-medium text-indigo-300">/ {totalItems}</span></span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Jumlah Skor</span>
+                                        <span className="font-black text-base text-indigo-900">{currentTotalScore} <span className="text-sm font-medium text-indigo-300">/ {maxPossibleScore}</span></span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Peratus</span>
+                                        <span className={`font-black text-base ${percentage >= 85 ? 'text-success' : percentage > 0 ? 'text-danger' : 'text-danger'}`}>
+                                            {percentage}%
+                                        </span>
+                                    </div>
+                                </div>
+                                <button 
+                                    type="submit" 
+                                    disabled={answeredItemsCount < totalItems}
+                                    className={`px-6 py-3 rounded-xl text-sm font-black flex items-center gap-2 transition-all shadow-md ${answeredItemsCount === totalItems ? 'bg-gradient-to-r from-primary to-accent text-white hover:shadow-lg hover:scale-105 cursor-pointer' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                                >
+                                    <i className="ph ph-floppy-disk text-xl"></i> Simpan Pencerapan
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                );
+            };
+
+            const HistoryContent = () => {
+                const [filter, setFilter] = useState('Semua');
+                const [deleteConfirm, setDeleteConfirm] = useState(null);
+                const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+
+                const filteredObs = filter === 'Semua' 
+                    ? db.observations 
+                    : db.observations.filter(o => o.session_name === filter);
+
+                const groupedObs = filteredObs.reduce((acc, obs) => {
+                    if (!acc[obs.session_name]) acc[obs.session_name] = [];
+                    acc[obs.session_name].push(obs);
+                    return acc;
+                }, {});
+
+                const handleDelete = async (id) => {
+                    const obsToDelete = db.observations.find(o => o.id === id);
+                    
+                    setDb(prev => ({
+                        ...prev,
+                        observations: prev.observations.filter(o => o.id !== id)
+                    }));
+                    setDeleteConfirm(null);
+
+                    if (isCloudReady && window.firebaseAPI) {
+                        const { db: fireDB, doc: fireDoc, deleteDoc } = window.firebaseAPI;
+                        try {
+                            await deleteDoc(fireDoc(fireDB, 'observations', id));
+                            logAudit('DELETE', 'observations', id, null, obsToDelete);
+                            setToastMessage({ type: 'warning', text: 'Rekod telah dipadam untuk semua pengguna.' });
+                        } catch (e) {
+                            console.error("Gagal memadam dari awan", e);
+                        }
+                    } else {
+                        logAudit('DELETE', 'observations', id, null, obsToDelete);
+                        setToastMessage({ type: 'warning', text: 'Rekod dipadam dari memori (Mod Offline).' });
+                    }
+                    setTimeout(() => setToastMessage(null), 3000);
+                };
+
+                const handleBulkDelete = async () => {
+                    if (filteredObs.length === 0) return;
+                    const idsToDelete = filteredObs.map(o => o.id);
+                    const obsToDelete = [...filteredObs];
+
+                    setDb(prev => ({
+                        ...prev,
+                        observations: prev.observations.filter(o => !idsToDelete.includes(o.id))
+                    }));
+                    setBulkDeleteConfirm(false);
+
+                    if (isCloudReady && window.firebaseAPI) {
+                        const { db: fireDB, doc: fireDoc, deleteDoc } = window.firebaseAPI;
+                        try {
+                            await Promise.all(idsToDelete.map(async (id, index) => {
+                                await deleteDoc(fireDoc(fireDB, 'observations', id));
+                                logAudit('DELETE', 'observations', id, null, obsToDelete[index]);
+                            }));
+                            setToastMessage({ type: 'warning', text: `${idsToDelete.length} rekod telah dipadam.` });
+                        } catch (e) {
+                            console.error("Gagal memadam secara pukal", e);
+                        }
+                    } else {
+                        idsToDelete.forEach((id, index) => {
+                            logAudit('DELETE', 'observations', id, null, obsToDelete[index]);
+                        });
+                        setToastMessage({ type: 'warning', text: `${idsToDelete.length} rekod dipadam (Mod Offline).` });
+                    }
+                    setTimeout(() => setToastMessage(null), 3000);
+                };
+
+                return (
+                    <div className="p-4 md:p-8 animate-fade-in pb-20 print:p-0 print:m-0 max-w-7xl mx-auto">
+                        <div className="flex justify-between items-center mb-6 no-print gap-2">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white shadow-md hidden md:flex">
+                                    <i className="ph ph-clock-counter-clockwise text-xl"></i>
+                                </div>
+                                <h2 className="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Rekod Pencerapan</h2>
+                            </div>
+                            <button 
+                                onClick={() => window.print()}
+                                className="px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-primary to-accent text-white text-xs md:text-sm font-bold rounded-lg hover:shadow-lg hover:scale-105 flex items-center gap-1.5 shadow-md transition-all whitespace-nowrap"
+                            >
+                                <i className="ph ph-printer text-base md:text-lg"></i>
+                                <span className="hidden sm:inline">Cetak Keseluruhan</span>
+                                <span className="sm:hidden">Cetak</span>
+                            </button>
+                        </div>
+
+                        <div className="hidden print:block mb-6 text-center">
+                            <h2 className="text-2xl font-bold text-black uppercase mb-1">Senarai Rekod Pencerapan PdPc</h2>
+                            <p className="text-sm text-gray-700 font-medium">Kategori: {filter} | Sekolah: SK Pendidikan Khas Miri</p>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 no-print">
+                            <div className="flex overflow-x-auto gap-2 pb-2 hide-scrollbar w-full md:w-auto">
+                                {['Semua', 'Pencerapan Kendiri', 'Pencerapan Pertama', 'Pencerapan Kedua', 'Pencerapan Berkala'].map(f => (
+                                    <button 
+                                        key={f} 
+                                        onClick={() => { setFilter(f); setBulkDeleteConfirm(false); }}
+                                        className={`px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${filter === f ? 'bg-gradient-to-r from-primary to-accent text-white shadow-lg' : 'bg-white text-indigo-600 hover:bg-indigo-50 border border-indigo-200 shadow-sm'}`}
+                                    >
+                                        {f}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            {filteredObs.length > 0 && (
+                                <div className="flex-shrink-0 w-full md:w-auto">
+                                    {bulkDeleteConfirm ? (
+                                        <div className="flex items-center gap-2 animate-fade-in bg-rose-50 p-1.5 rounded-xl border border-rose-200 w-full md:w-auto justify-between md:justify-start shadow-inner">
+                                            <span className="text-sm font-black text-rose-600 px-2">Padam paparan ini ({filteredObs.length})?</span>
+                                            <div className="flex gap-1">
+                                                <button onClick={handleBulkDelete} className="px-3 py-1.5 bg-rose-600 text-white font-bold rounded-lg hover:bg-rose-700 transition-colors shadow-sm flex items-center gap-1"><i className="ph ph-check text-lg"></i> Ya</button>
+                                                <button onClick={() => setBulkDeleteConfirm(false)} className="px-3 py-1.5 bg-white text-gray-700 font-bold border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors shadow-sm flex items-center gap-1"><i className="ph ph-x text-lg"></i> Batal</button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <button onClick={() => setBulkDeleteConfirm(true)} className="w-full md:w-auto px-5 py-2 bg-white text-rose-500 border border-rose-200 text-sm font-bold rounded-xl hover:bg-rose-50 flex items-center justify-center gap-2 shadow-sm transition-all whitespace-nowrap">
+                                            <i className="ph ph-trash text-lg"></i>
+                                            Padam Pilihan
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {Object.keys(groupedObs).length > 0 ? (
+                            <div className="space-y-8">
+                                {Object.entries(groupedObs).map(([sessionName, observations]) => (
+                                    <div key={sessionName} className="bg-white rounded-2xl shadow-md border border-indigo-100 overflow-hidden print:shadow-none print:border-none print:rounded-none">
+                                        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-indigo-100 px-5 py-4 flex items-center gap-3">
+                                            <i className="ph ph-folder-open text-accent text-2xl"></i>
+                                            <h3 className="font-black text-indigo-900 text-lg">{sessionName}</h3>
+                                            <span className="bg-white text-accent px-3 py-1 rounded-full text-xs font-black shadow-sm ml-2 border border-indigo-100">{observations.length} Rekod</span>
+                                        </div>
+                                        <div className="overflow-x-auto print:overflow-visible">
+                                            <table className="w-full text-left border-collapse min-w-[800px] print:min-w-full print:border print:border-slate-800">
+                                                <thead>
+                                                    <tr className="bg-white border-b border-indigo-50 print:bg-slate-100 print:border-slate-800">
+                                                        <th className="p-4 print:p-2 print:border print:border-slate-800 font-black text-xs text-indigo-400 print:text-black uppercase tracking-widest">Tarikh</th>
+                                                        <th className="p-4 print:p-2 print:border print:border-slate-800 font-black text-xs text-indigo-400 print:text-black uppercase tracking-widest">Nama Guru</th>
+                                                        <th className="p-4 print:p-2 print:border print:border-slate-800 font-black text-xs text-indigo-400 print:text-black uppercase tracking-widest">Subjek</th>
+                                                        <th className="p-4 print:p-2 print:border print:border-slate-800 font-black text-xs text-indigo-400 print:text-black uppercase tracking-widest">Sesi</th>
+                                                        <th className="p-4 print:p-2 print:border print:border-slate-800 font-black text-xs text-indigo-400 print:text-black uppercase tracking-widest">Peratus & Taraf</th>
+                                                        <th className="p-4 font-black text-xs text-indigo-400 uppercase tracking-widest text-center no-print">Tindakan</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-indigo-50 print:divide-slate-800">
+                                                    {observations.map(obs => (
+                                                        <tr key={obs.id} className="hover:bg-indigo-50/30 transition-colors print:hover:bg-transparent">
+                                                            <td className="p-4 print:p-2 print:border print:border-slate-800 text-sm font-bold text-indigo-800 print:text-black">{obs.observation_date}</td>
+                                                            <td className="p-4 print:p-2 print:border print:border-slate-800 text-sm font-black text-indigo-950 print:text-black">{obs.teacherName}</td>
+                                                            <td className="p-4 print:p-2 print:border print:border-slate-800 text-sm font-medium text-indigo-700 print:text-black">{obs.subject}</td>
+                                                            <td className="p-4 print:p-2 print:border print:border-slate-800">
+                                                                <span className="px-3 py-1 bg-indigo-50 text-primary border border-indigo-100 print:bg-transparent print:text-black print:p-0 print:border-none print:font-normal rounded-full text-xs font-bold">{obs.session_name}</span>
+                                                            </td>
+                                                            <td className="p-4 print:p-2 print:border print:border-slate-800">
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-black text-lg text-indigo-950 print:text-black print:text-sm">{obs.percentage}%</span>
+                                                                    <span className={`text-[10px] font-black uppercase tracking-widest print:text-black ${calculateColor(obs.performance_level)}`}>{obs.performance_level}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-4 flex justify-center gap-2 no-print">
+                                                                <button onClick={() => setViewingReport(obs)} className="p-2 bg-indigo-50 text-primary rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm" title="Lihat Laporan">
+                                                                    <i className="ph ph-printer text-xl"></i>
+                                                                </button>
+                                                                
+                                                                <button className="p-2 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-500 hover:text-white transition-all shadow-sm" title="Kemaskini">
+                                                                    <i className="ph ph-pencil-simple text-xl"></i>
+                                                                </button>
+                                                                
+                                                                {deleteConfirm === obs.id ? (
+                                                                    <div className="flex gap-1 animate-fade-in">
+                                                                        <button onClick={() => handleDelete(obs.id)} className="p-2 bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-colors shadow-sm" title="Sahkan"><i className="ph ph-check text-xl"></i></button>
+                                                                        <button onClick={() => setDeleteConfirm(null)} className="p-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors shadow-sm" title="Batal"><i className="ph ph-x text-xl"></i></button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <button onClick={() => setDeleteConfirm(obs.id)} className="p-2 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all shadow-sm" title="Padam">
+                                                                        <i className="ph ph-trash text-xl"></i>
+                                                                    </button>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white rounded-2xl shadow-sm border border-indigo-100 p-16 text-center">
+                                <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-300">
+                                    <i className="ph ph-folder-open text-4xl"></i>
+                                </div>
+                                <p className="text-indigo-900 font-bold">Tiada rekod pencerapan dijumpai untuk paparan ini.</p>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+            const AdminContent = () => {
+                const [adminTab, setAdminTab] = useState('pengurusan_guru');
+                
+                const [showAddForm, setShowAddForm] = useState(false);
+                const [editingTeacherId, setEditingTeacherId] = useState(null);
+                const [deleteTeacherConfirm, setDeleteTeacherConfirm] = useState(null);
+                const [newTeacherForm, setNewTeacherForm] = useState({
+                    teacher_name: '', ic_no: '', position: 'Guru Penolong', option: ''
+                });
+
+                const handleSaveTeacher = async (e) => {
+                    e.preventDefault();
+                    const isEditing = !!editingTeacherId;
+                    let teacherObj;
+
+                    if (isEditing) {
+                        const existing = db.teachers.find(t => t.id === editingTeacherId);
+                        teacherObj = {
+                            ...existing,
+                            teacher_name: newTeacherForm.teacher_name,
+                            ic_no: newTeacherForm.ic_no,
+                            position: newTeacherForm.position,
+                            option: newTeacherForm.option
+                        };
+                    } else {
+                        teacherObj = {
+                            id: generateUUID(),
+                            user_id: null,
+                            school_id: currentUser.school_id,
+                            teacher_name: newTeacherForm.teacher_name,
+                            staff_id: 'STF' + Math.floor(Math.random() * 1000),
+                            ic_no: newTeacherForm.ic_no,
+                            position: newTeacherForm.position,
+                            option: newTeacherForm.option,
+                            specialization: 'Umum',
+                            class_name: '-',
+                            subject: '-',
+                            is_active: true,
+                            sort_order: db.teachers.length + 1
+                        };
+                    }
+
+                    setDb(prev => {
+                        let updatedTeachers;
+                        if (isEditing) {
+                            updatedTeachers = prev.teachers.map(t => t.id === editingTeacherId ? teacherObj : t);
+                        } else {
+                            updatedTeachers = [...prev.teachers, teacherObj]; 
+                        }
+                        return { ...prev, teachers: updatedTeachers };
+                    });
+                    
+                    if (isCloudReady && window.firebaseAPI) {
+                        const { db: fireDB, doc: fireDoc, setDoc } = window.firebaseAPI;
+                        try {
+                            await setDoc(fireDoc(fireDB, 'teachers', teacherObj.id), teacherObj);
+                            logAudit(isEditing ? 'UPDATE' : 'CREATE', 'teachers', teacherObj.id, teacherObj);
+                            setToastMessage({ type: 'success', text: `Rekod guru berjaya ${isEditing ? 'dikemaskini' : 'ditambah'}!` });
+                        } catch (err) {
+                            console.error(err);
+                        }
+                    } else {
+                        logAudit(isEditing ? 'UPDATE' : 'CREATE', 'teachers', teacherObj.id, teacherObj);
+                        setToastMessage({ type: 'success', text: `Rekod ${isEditing ? 'dikemaskini' : 'ditambah'} (Offline).` });
+                    }
+                    
+                    setShowAddForm(false);
+                    setEditingTeacherId(null);
+                    setNewTeacherForm({ teacher_name: '', ic_no: '', position: 'Guru Penolong', option: '' });
+                    setTimeout(() => setToastMessage(null), 3000);
+                };
+
+                const handleDeleteTeacherAction = async (id) => {
+                    const teacherToDelete = db.teachers.find(t => t.id === id);
+                    
+                    setDb(prev => ({
+                        ...prev,
+                        teachers: prev.teachers.filter(t => t.id !== id)
+                    }));
+                    setDeleteTeacherConfirm(null);
+
+                    if (isCloudReady && window.firebaseAPI) {
+                        const { db: fireDB, doc: fireDoc, deleteDoc } = window.firebaseAPI;
+                        try {
+                            await deleteDoc(fireDoc(fireDB, 'teachers', id));
+                            logAudit('DELETE', 'teachers', id, null, teacherToDelete);
+                            setToastMessage({ type: 'warning', text: 'Rekod guru telah dipadam.' });
+                        } catch (e) {
+                            console.error("Gagal memadam dari awan", e);
+                        }
+                    } else {
+                        logAudit('DELETE', 'teachers', id, null, teacherToDelete);
+                        setToastMessage({ type: 'warning', text: 'Rekod guru dipadam (Offline).' });
+                    }
+                    setTimeout(() => setToastMessage(null), 3000);
+                };
+
+                const handleEditTeacherClick = (teacher) => {
+                    setNewTeacherForm({
+                        teacher_name: teacher.teacher_name,
+                        ic_no: teacher.ic_no,
+                        position: teacher.position,
+                        option: teacher.option
+                    });
+                    setEditingTeacherId(teacher.id);
+                    setShowAddForm(true);
+                };
+
+                return (
+                    <div className="p-4 md:p-8 animate-fade-in pb-20 flex justify-center">
+                        <div className="w-full max-w-5xl">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                                <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Pentadbir Sistem</h2>
+                                <div className="flex bg-white rounded-xl p-1.5 border border-indigo-100 shadow-sm">
+                                    <button 
+                                        onClick={() => setAdminTab('pengurusan_guru')}
+                                        className={`px-4 py-2 text-sm font-bold rounded-lg transition-all flex items-center gap-2 ${adminTab === 'pengurusan_guru' ? 'bg-indigo-50 text-primary shadow-sm' : 'text-gray-500 hover:text-indigo-600'}`}
+                                    >
+                                        <i className="ph ph-users text-lg"></i> Pengurusan Guru
+                                    </button>
+                                    <button 
+                                        onClick={() => setAdminTab('log_sistem')}
+                                        className={`px-4 py-2 text-sm font-bold rounded-lg transition-all flex items-center gap-2 ${adminTab === 'log_sistem' ? 'bg-indigo-50 text-primary shadow-sm' : 'text-gray-500 hover:text-indigo-600'}`}
+                                    >
+                                        <i className="ph ph-list-dashes text-lg"></i> Log Sistem
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            {adminTab === 'pengurusan_guru' && (
+                                <div className="bg-white rounded-2xl shadow-md border border-indigo-100 p-6 animate-fade-in">
+                                    <div className="flex justify-between items-center mb-6 pb-4 border-b border-indigo-50">
+                                        <h3 className="text-lg font-black text-indigo-900">Senarai Guru</h3>
+                                        {!showAddForm ? (
+                                            <button onClick={() => { setShowAddForm(true); setEditingTeacherId(null); setNewTeacherForm({ teacher_name: '', ic_no: '', position: 'Guru Penolong', option: '' }); }} className="bg-gradient-to-r from-primary to-accent hover:shadow-lg hover:scale-105 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-md">
+                                                <i className="ph ph-plus font-bold text-lg"></i> Tambah Guru
+                                            </button>
+                                        ) : (
+                                            <button onClick={() => { setShowAddForm(false); setEditingTeacherId(null); }} className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-sm">
+                                                <i className="ph ph-x font-bold text-lg"></i> Batal
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {showAddForm && (
+                                        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 p-6 mb-6 animate-fade-in shadow-inner">
+                                            <h4 className="text-primary font-black text-sm mb-4 flex items-center gap-2"><i className="ph ph-pencil-circle text-xl"></i> {editingTeacherId ? 'Kemaskini Guru' : 'Borang Guru Baru'}</h4>
+                                            <form onSubmit={handleSaveTeacher}>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-indigo-900 mb-1">Nama Penuh</label>
+                                                        <input type="text" value={newTeacherForm.teacher_name} onChange={e => setNewTeacherForm({...newTeacherForm, teacher_name: e.target.value})} required placeholder="Cth: Ahmad bin Abu" className="w-full border border-indigo-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-indigo-900 mb-1">No. Kad Pengenalan</label>
+                                                        <input type="text" value={newTeacherForm.ic_no} onChange={e => setNewTeacherForm({...newTeacherForm, ic_no: e.target.value})} required placeholder="Cth: 800101-13-5001" className="w-full border border-indigo-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-indigo-900 mb-1">Jawatan</label>
+                                                        <input type="text" value={newTeacherForm.position} onChange={e => setNewTeacherForm({...newTeacherForm, position: e.target.value})} required placeholder="Cth: Guru Penolong" className="w-full border border-indigo-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-indigo-900 mb-1">Opsyen</label>
+                                                        <input type="text" value={newTeacherForm.option} onChange={e => setNewTeacherForm({...newTeacherForm, option: e.target.value})} required placeholder="Cth: Pendidikan Khas" className="w-full border border-indigo-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none" />
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-end mt-4">
+                                                    <button type="submit" className="bg-success hover:bg-emerald-600 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all hover:scale-105 flex items-center gap-2 shadow-md">
+                                                        <i className="ph ph-floppy-disk text-lg"></i> Simpan Rekod
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    )}
+
+                                    <div className="overflow-x-auto border border-indigo-50 rounded-xl">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="border-b border-indigo-100 bg-indigo-50/50">
+                                                    <th className="p-4 font-black text-indigo-400 text-xs uppercase tracking-widest whitespace-nowrap">Nama Penuh</th>
+                                                    <th className="p-4 font-black text-indigo-400 text-xs uppercase tracking-widest whitespace-nowrap">No. KP</th>
+                                                    <th className="p-4 font-black text-indigo-400 text-xs uppercase tracking-widest whitespace-nowrap">Jawatan</th>
+                                                    <th className="p-4 font-black text-indigo-400 text-xs uppercase tracking-widest whitespace-nowrap">Opsyen</th>
+                                                    <th className="p-4 font-black text-indigo-400 text-xs uppercase tracking-widest whitespace-nowrap text-center">Tindakan</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-indigo-50">
+                                                {db.teachers.map(t => (
+                                                    <tr key={t.id} className="hover:bg-indigo-50/30 transition-colors">
+                                                        <td className="p-4 text-sm font-black text-indigo-900">{t.teacher_name}</td>
+                                                        <td className="p-4 text-sm text-indigo-600 font-mono font-bold">{t.ic_no}</td>
+                                                        <td className="p-4 text-sm font-medium text-indigo-700">{t.position}</td>
+                                                        <td className="p-4 text-sm font-medium text-indigo-700">{t.option}</td>
+                                                        <td className="p-4 text-center flex justify-center gap-2">
+                                                            <button onClick={() => handleEditTeacherClick(t)} className="p-2 bg-indigo-50 text-primary rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm" title="Kemaskini">
+                                                                <i className="ph ph-pencil-simple text-lg"></i>
+                                                            </button>
+                                                            {deleteTeacherConfirm === t.id ? (
+                                                                <div className="flex gap-1 animate-fade-in">
+                                                                    <button onClick={() => handleDeleteTeacherAction(t.id)} className="p-2 bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-colors shadow-sm" title="Sahkan"><i className="ph ph-check text-lg"></i></button>
+                                                                    <button onClick={() => setDeleteTeacherConfirm(null)} className="p-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors shadow-sm" title="Batal"><i className="ph ph-x text-lg"></i></button>
+                                                                </div>
+                                                            ) : (
+                                                                <button onClick={() => setDeleteTeacherConfirm(t.id)} className="p-2 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all shadow-sm" title="Padam">
+                                                                    <i className="ph ph-trash text-lg"></i>
+                                                                </button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            {adminTab === 'log_sistem' && (
+                                <div className="bg-white rounded-2xl shadow-md border border-indigo-100 p-6 animate-fade-in">
+                                    <div className="mb-6 pb-4 border-b border-indigo-50">
+                                        <h3 className="text-lg font-black text-indigo-900">Log Aktiviti (Audit)</h3>
+                                    </div>
+                                    <div className="overflow-y-auto max-h-[500px] space-y-3 pr-2">
+                                        {db.audit_logs.length > 0 ? db.audit_logs.map(log => (
+                                            <div key={log.id} className="border-l-4 border-primary bg-gradient-to-r from-indigo-50 to-white p-4 rounded-r-xl border border-indigo-50">
+                                                <div className="flex justify-between items-start mb-1 gap-2">
+                                                    <span className="font-black text-primary text-sm flex items-center gap-2">
+                                                        <i className="ph ph-shield-check text-xl"></i> {log.action}
+                                                    </span>
+                                                    <span className="text-[10px] text-indigo-400 font-mono font-bold bg-white px-2 py-1 rounded-md shadow-sm border border-indigo-50">{new Date(log.created_at).toLocaleString('ms-MY')}</span>
+                                                </div>
+                                                <p className="text-sm text-indigo-900 mt-2 font-bold">Jadual: <span className="font-mono text-accent bg-purple-50 px-1.5 py-0.5 rounded">{log.table_name}</span></p>
+                                                <p className="text-xs font-bold text-indigo-400 mt-1.5 flex items-center gap-1"><i className="ph ph-user"></i> Oleh: {log.userName}</p>
+                                            </div>
+                                        )) : (
+                                            <div className="h-full flex flex-col items-center justify-center text-indigo-200 py-16">
+                                                <i className="ph ph-clipboard-text text-5xl mb-3 opacity-50"></i>
+                                                <p className="text-sm font-bold">Tiada aktiviti direkodkan setakat ini.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
+            const ReportModal = ({ obs, onClose }) => {
+                if (!obs) return null;
+                const teacher = db.teachers.find(t => t.id === obs.teacher_id) || {};
+                
+                return (
+                    <div className="fixed inset-0 bg-indigo-900/60 z-50 overflow-y-auto print:static print:bg-transparent backdrop-blur-sm">
+                        <div className="min-h-screen flex items-center justify-center p-4 print:p-0 py-10">
+                            <div className="bg-white w-full max-w-5xl rounded-3xl shadow-2xl relative print:shadow-none print:rounded-none overflow-hidden border border-indigo-100">
+                                
+                                <div className="flex justify-between items-center p-6 border-b border-indigo-50 no-print sticky top-0 bg-white/95 backdrop-blur z-10">
+                                    <h3 className="font-black text-xl text-indigo-950 flex items-center gap-2"><i className="ph ph-file-text text-primary text-2xl"></i> Laporan eSTANDARD 4 PdPc GPkhas</h3>
+                                    <div className="flex gap-3">
+                                        <button onClick={() => window.print()} className="px-5 py-2.5 bg-gradient-to-r from-primary to-accent text-white font-bold rounded-xl hover:shadow-lg hover:scale-105 flex items-center gap-2 shadow-sm transition-all">
+                                            <i className="ph ph-printer text-xl"></i> Cetak
+                                        </button>
+                                        <button onClick={onClose} className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-rose-100 hover:text-rose-600 transition-colors">
+                                            <i className="ph ph-x text-xl font-bold"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="p-8 md:p-12 print:p-0 bg-white">
+                                    <div className="text-center border-b-4 border-double border-indigo-900 pb-6 mb-8">
+                                        <h1 className="text-2xl md:text-3xl font-black uppercase tracking-wider mb-2 text-indigo-950">SK Pendidikan Khas Miri</h1>
+                                        <h2 className="text-lg md:text-xl font-bold text-indigo-800">Instrumen Pemantauan PdPc (eSTANDARD 4 PdPc GPkhas)</h2>
+                                        <p className="text-indigo-600 mt-2 font-bold bg-indigo-50 inline-block px-4 py-1 rounded-full">{obs.session_name}</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-8 text-sm border-b border-indigo-100 pb-8 text-indigo-900">
+                                        <div className="flex"><span className="font-black w-32 text-indigo-400 uppercase tracking-wider text-[10px]">Nama Guru</span> <span className="font-bold text-base">{obs.teacherName}</span></div>
+                                        <div className="flex"><span className="font-black w-32 text-indigo-400 uppercase tracking-wider text-[10px]">Tarikh</span> <span className="font-bold text-base">{obs.observation_date}</span></div>
+                                        <div className="flex"><span className="font-black w-32 text-indigo-400 uppercase tracking-wider text-[10px]">No. KP</span> <span className="font-bold text-base">{teacher.ic_no}</span></div>
+                                        <div className="flex"><span className="font-black w-32 text-indigo-400 uppercase tracking-wider text-[10px]">Masa</span> <span className="font-bold text-base">{obs.start_time || '08:00'} - {obs.end_time || '09:00'}</span></div>
+                                        <div className="flex"><span className="font-black w-32 text-indigo-400 uppercase tracking-wider text-[10px]">Subjek</span> <span className="font-bold text-base">{obs.subject}</span></div>
+                                        <div className="flex"><span className="font-black w-32 text-indigo-400 uppercase tracking-wider text-[10px]">Kelas</span> <span className="font-bold text-base">{obs.class_name || 'N/A'}</span></div>
+                                    </div>
+
+                                    <div className="my-8 text-center bg-gradient-to-b from-indigo-50 to-white print:bg-transparent p-8 rounded-3xl border border-indigo-100 print:border-none shadow-sm">
+                                        <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-2">Markah Keseluruhan</h3>
+                                        <div className="text-6xl md:text-7xl font-black text-indigo-950 mb-2">{obs.percentage}%</div>
+                                        <div className={`mt-2 text-xl md:text-2xl font-black tracking-wider ${calculateColor(obs.performance_level)}`}>{obs.performance_level}</div>
+                                    </div>
+
+                                    <div className="print-break-inside-avoid">
+                                        <h3 className="font-black text-lg mb-3 border-b-2 border-indigo-100 text-indigo-900 pb-2 flex items-center gap-2"><i className="ph ph-chat-circle-text text-accent"></i> Ulasan Pencerap:</h3>
+                                        <p className="p-5 bg-indigo-50/50 print:bg-transparent rounded-2xl border border-indigo-100 print:border-none min-h-[120px] text-indigo-900 font-medium whitespace-pre-wrap leading-relaxed">
+                                            {obs.general_comment || "Tiada ulasan direkodkan."}
+                                        </p>
+                                    </div>
+
+                                    <div className="mt-20 pt-8 flex justify-between px-4 md:px-10">
+                                        <div className="text-center">
+                                            <div className="border-b-2 border-indigo-900 w-48 md:w-56 mb-3"></div>
+                                            <div className="font-black text-indigo-900 text-sm">Tandatangan Pencerap</div>
+                                            <div className="text-xs mt-1 text-indigo-500 font-bold">{obs.observer_name || currentUser.full_name}</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="border-b-2 border-indigo-900 w-48 md:w-56 mb-3"></div>
+                                            <div className="font-black text-indigo-900 text-sm">Tandatangan Dicerap</div>
+                                            <div className="text-xs mt-1 text-indigo-500 font-bold">{obs.teacherName}</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="mt-16 print-break-before">
+                                        <h3 className="font-black text-lg mb-4 text-center text-indigo-900 bg-indigo-50 py-2 rounded-xl">Lampiran Skor Terperinci</h3>
+                                        <div className="overflow-x-auto rounded-xl border border-indigo-100">
+                                            <table className="w-full text-sm border-collapse">
+                                                <thead>
+                                                    <tr className="bg-indigo-50">
+                                                        <th className="border-b border-r border-indigo-100 p-3 text-left w-16 font-black text-indigo-400 text-xs">ITEM</th>
+                                                        <th className="border-b border-indigo-100 p-3 text-left font-black text-indigo-400 text-xs">ASPEK PENILAIAN</th>
+                                                        <th className="border-b border-l border-indigo-100 p-3 text-center w-24 font-black text-indigo-400 text-xs">SKOR</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {INSTRUMENT_DATA.map(aspect => 
+                                                        aspect.subAspects.map(sub => 
+                                                            sub.items.map((item, idx) => (
+                                                                <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-indigo-50/30'}>
+                                                                    <td className="border-b border-r border-indigo-50 p-3 font-black text-accent text-xs whitespace-nowrap">{item.id}</td>
+                                                                    <td className="border-b border-indigo-50 p-3 text-indigo-900 font-medium text-xs">{item.text}</td>
+                                                                    <td className="border-b border-l border-indigo-50 p-3 text-center font-black text-indigo-900 text-base">
+                                                                        {obs.scores && obs.scores[item.id] !== undefined ? obs.scores[item.id] : '-'}
+                                                                    </td>
+                                                                </tr>
+                                                            ))
+                                                        )
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const navItems = [
+                { id: 'dashboard', label: 'Dashboard', icon: 'ph-squares-four' },
+                { id: 'baru', label: 'Pencerapan Baharu', icon: 'ph-plus-circle' },
+                { id: 'history', label: 'Rekod Pencerapan', icon: 'ph-clock-counter-clockwise' },
+                { id: 'admin', label: 'Pentadbir Sistem', icon: 'ph-gear' }
+            ];
+
+            return (
+                <div className="flex h-screen bg-[#eef2ff] overflow-hidden font-sans">
+                    
+                    <ReportModal obs={viewingReport} onClose={() => setViewingReport(null)} />
+                    
+                    {toastMessage && (
+                        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fade-in text-white font-bold border border-white/20 backdrop-blur-sm ${toastMessage.type === 'success' ? 'bg-success' : toastMessage.type === 'error' ? 'bg-danger' : 'bg-warning'}`}>
+                            <i className={`ph ${toastMessage.type === 'success' ? 'ph-check-circle' : 'ph-info'} text-2xl`}></i>
+                            {toastMessage.text}
+                        </div>
+                    )}
+
+                    <div className="md:hidden bg-gradient-to-r from-primary to-accent text-white p-4 flex justify-between items-center no-print fixed w-full z-40 shadow-lg">
+                        <div className="font-black text-lg flex items-center gap-2">
+                            <img src="logo.png" alt="Logo SKPK Miri" className="w-8 h-8 rounded-full object-cover bg-white shadow-sm" onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/100x100/ffffff/4f46e5?text=SKPK"; }} /> eSTANDARD 4 PdPc GPkhas
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold bg-white/20 px-2 py-1.5 rounded-full shadow-sm backdrop-blur-sm">
+                                <div className={`w-2 h-2 rounded-full ${isCloudReady ? 'bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]' : 'bg-red-400'}`}></div>
+                                {isCloudReady ? 'Awan' : 'Offline'}
+                            </div>
+                            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-all backdrop-blur-sm">
+                                <i className="ph ph-list text-2xl"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 fixed md:relative w-64 bg-gradient-to-b from-primary via-accent to-secondary text-white shadow-2xl flex-shrink-0 no-print flex flex-col z-30 h-full pt-16 md:pt-0 transition-transform duration-300 ease-in-out`}>
+                        <div className="p-8 text-center border-b border-white/10 hidden md:block">
+                            <div className="w-24 h-24 mx-auto mb-4 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center shadow-xl overflow-hidden border-2 border-white/30 p-1">
+                                <img src="logo.png" alt="Logo SKPK Miri" className="w-full h-full object-cover rounded-full bg-white" onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/150x150/ffffff/4f46e5?text=SKPK"; }} />
+                            </div>
+                            <h1 className="font-black text-lg leading-tight tracking-wide drop-shadow-md">Aplikasi eSTANDARD 4 PdPc GPkhas</h1>
+                            <p className="text-indigo-100 text-[10px] mt-3 font-bold uppercase tracking-widest bg-white/20 py-1.5 px-3 rounded-xl inline-block leading-snug shadow-sm backdrop-blur-sm">Standard 4 PdPc</p>
+                        </div>
+                        
+                        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto mt-4 md:mt-0">
+                            {navItems.map(item => (
+                                <button 
+                                    key={item.id}
+                                    onClick={() => { setActiveTab(item.id); setIsSidebarOpen(false); }}
+                                    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 font-bold ${activeTab === item.id ? 'bg-white text-accent shadow-xl scale-105' : 'text-indigo-100 hover:bg-white/20 hover:pl-6'}`}
+                                >
+                                    <i className={`ph ${item.icon} text-xl ${activeTab === item.id ? 'text-accent' : 'text-indigo-200'}`}></i>
+                                    {item.label}
+                                </button>
+                            ))}
+                        </nav>
+                        
+                        <div className="p-4">
+                            <div className="bg-black/10 backdrop-blur-md p-4 rounded-xl mb-3 flex items-center justify-between border border-white/10 shadow-inner">
+                                <span className="text-xs text-indigo-100 font-bold">Status Data:</span>
+                                <div className="flex items-center gap-1.5 text-xs font-black text-white">
+                                    <div className={`w-2 h-2 rounded-full ${isCloudReady ? 'bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.8)]' : 'bg-red-400'}`}></div>
+                                    {isCloudReady ? 'Disegerak' : 'Offline'}
+                                </div>
+                            </div>
+                            <div className="bg-black/10 backdrop-blur-md p-4 rounded-xl border border-white/10 shadow-inner">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-white to-indigo-100 flex items-center justify-center font-black text-primary text-xs shadow-md">
+                                        MA
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-xs font-black text-white line-clamp-1 drop-shadow-sm">{currentUser.full_name}</p>
+                                        <p className="text-[10px] text-indigo-200 font-bold">{currentUser.role}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 flex flex-col h-full overflow-y-auto relative z-10 pt-16 md:pt-0 w-full bg-[#eef2ff] print:overflow-visible print:h-auto print:pt-0">
+                        {activeTab === 'dashboard' && <DashboardContent />}
+                        {activeTab === 'baru' && <NewObservationContent />}
+                        {activeTab === 'history' && <HistoryContent />}
+                        {activeTab === 'admin' && <AdminContent />}
+                    </div>
+
+                    {isSidebarOpen && (
+                        <div className="fixed inset-0 bg-indigo-900/40 backdrop-blur-sm z-20 md:hidden" onClick={() => setIsSidebarOpen(false)}></div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
