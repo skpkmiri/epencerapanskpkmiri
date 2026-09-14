@@ -89,21 +89,23 @@
             animation: fadeIn 0.4s ease-out forwards;
         }
 
-        /* KEMASKINI 3: Arahan CSS khusus untuk memaksa cetakan saiz A4 dan susun atur yang kemas */
+        /* KEMASKINI CETAKAN: Baiki isu saiz terlalu besar dan jarak di sebelah kanan */
         @media print {
             @page {
-                size: A4 portrait; /* Paksa saiz A4 (Portrait) */
-                margin: 1cm; /* Margin yang sekata */
+                size: A4 portrait; 
+                margin: 0.5cm; /* Kecilkan margin muka surat */
             }
             body, html { 
                 background-color: white !important; 
                 margin: 0 !important;
                 padding: 0 !important;
+                /* Gunakan ciri font bersaiz statik untuk elak membesar */
+                font-size: 11pt !important;
             }
             .no-print { display: none !important; }
             .print-only { display: block !important; }
             
-            /* Tetapan spesifik pembalut utama supaya "fit to page" */
+            /* Tetapan spesifik pembalut utama supaya "fit to page" dengan kemas */
             #root, .fixed.inset-0, .bg-white.w-full.max-w-5xl { 
                 position: static !important;
                 width: 100% !important;
@@ -115,6 +117,21 @@
                 border-radius: 0 !important;
                 transform: none !important;
                 overflow: visible !important;
+                display: block !important; /* Timpa flex behavior yang mungkin sempitkan kontena */
+            }
+
+            /* Membuang jarak/padding yang berlebihan dari modal semasa cetakan */
+            .print\:p-6, .print\:py-0 {
+                padding: 0 !important;
+            }
+            
+            /* Menyesuaikan grid agar lebih kemas dan mampat */
+            .grid {
+                display: grid !important;
+            }
+            .grid-cols-1.md\:grid-cols-2 {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 0.5rem !important;
             }
             
             /* Memastikan warna latar belakang dan teks dipelihara dalam cetakan */
@@ -123,13 +140,11 @@
             /* Mengelakkan elemen terpotong (page break) pada lokasi yang salah */
             .print-break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
             .print-break-before { break-before: page; page-break-before: always; }
-            
-            /* Saiz fon yang diselaraskan untuk A4 */
-            .text-sm { font-size: 12px !important; }
-            .text-xs { font-size: 10px !important; }
-            .text-base { font-size: 14px !important; }
-            h1.text-2xl { font-size: 1.5rem !important; }
-            h2.text-lg { font-size: 1.125rem !important; }
+
+            /* Menyelaraskan teks tandatangan e-Sign jika terlalu besar */
+            .text-3xl {
+                font-size: 24pt !important;
+            }
         }
     </style>
 </head>
@@ -512,7 +527,7 @@
                     end_time: obsData.end_time,
                     status: 'COMPLETED',
                     total_score: obsData.totalScore,
-                    maximum_score: 152.00, // 38 items x 4 points
+                    maximum_score: 152.00,
                     percentage: obsData.percentageFloat,
                     performance_level: obsData.performance_level,
                     general_comment: obsData.general_comment,
@@ -1350,8 +1365,8 @@
                 
                 return (
                     <div className="fixed inset-0 bg-indigo-900/60 z-50 overflow-y-auto print:static print:bg-transparent backdrop-blur-sm">
-                        <div className="min-h-screen flex items-center justify-center p-4 print:p-0 py-10 print:py-0">
-                            <div className="bg-white w-full max-w-5xl rounded-3xl shadow-2xl relative print:shadow-none print:rounded-none overflow-hidden border border-indigo-100">
+                        <div className="min-h-screen flex items-center justify-center p-4 print:p-0 py-10 print:py-0 w-full">
+                            <div className="bg-white w-full max-w-5xl rounded-3xl shadow-2xl relative print:shadow-none print:rounded-none overflow-hidden border border-indigo-100 mx-auto">
                                 
                                 <div className="flex justify-between items-center p-6 border-b border-indigo-50 no-print sticky top-0 bg-white/95 backdrop-blur z-10">
                                     <h3 className="font-black text-xl text-indigo-950 flex items-center gap-2"><i className="ph ph-file-text text-primary text-2xl"></i> Laporan eSTANDARD 4 PdPc GPkhas</h3>
@@ -1365,7 +1380,7 @@
                                     </div>
                                 </div>
 
-                                <div className="p-8 md:p-12 print:p-6 bg-white">
+                                <div className="p-8 md:p-12 print:p-0 bg-white mx-auto">
                                     <div className="text-center border-b-4 border-double border-indigo-900 pb-6 mb-8 flex flex-col items-center">
                                         <img src="logo.png" alt="Logo SKPK Miri" className="w-24 h-24 mb-4 object-contain shadow-sm rounded-full border-2 border-indigo-100" onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/100x100/ffffff/4f46e5?text=SKPK"; }} />
                                         <h1 className="text-2xl md:text-3xl font-black uppercase tracking-wider mb-2 text-indigo-950">SK Pendidikan Khas Miri</h1>
@@ -1395,7 +1410,6 @@
                                         </p>
                                     </div>
 
-                                    {/* KEMASKINI 1: Ruangan Tandatangan berserta E-Sign berasaskan font Cursive */}
                                     <div className="mt-20 pt-12 flex justify-between px-4 md:px-10 print-break-inside-avoid mb-10">
                                         <div className="text-center relative">
                                             <div className="absolute -top-12 left-0 right-0 text-3xl text-indigo-800/80 -rotate-2 select-none" style={{ fontFamily: "'Dancing Script', cursive" }}>
@@ -1416,7 +1430,7 @@
                                     </div>
                                     
                                     <div className="mt-16 print-break-before">
-                                        <h3 className="font-black text-lg mb-4 text-center text-indigo-900 bg-indigo-50 py-2 rounded-xl">Lampiran Skor Terperinci</h3>
+                                        <h3 className="font-black text-lg mb-4 text-center text-indigo-900 bg-indigo-50 py-2 rounded-xl print:py-1">Lampiran Skor Terperinci</h3>
                                         <div className="overflow-x-auto rounded-xl border border-indigo-100">
                                             <table className="w-full text-sm border-collapse">
                                                 <thead>
@@ -1431,16 +1445,15 @@
                                                         aspect.subAspects.map(sub => 
                                                             sub.items.map((item, idx) => (
                                                                 <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-indigo-50/30'}>
-                                                                    <td className="border-b border-r border-indigo-50 p-3 font-black text-accent text-xs whitespace-nowrap">{item.id}</td>
-                                                                    <td className="border-b border-indigo-50 p-3 text-indigo-900 font-medium text-xs">{item.text}</td>
-                                                                    <td className="border-b border-l border-indigo-50 p-3 text-center font-black text-indigo-900 text-base">
+                                                                    <td className="border-b border-r border-indigo-50 p-2 font-black text-accent text-xs whitespace-nowrap">{item.id}</td>
+                                                                    <td className="border-b border-indigo-50 p-2 text-indigo-900 font-medium text-xs">{item.text}</td>
+                                                                    <td className="border-b border-l border-indigo-50 p-2 text-center font-black text-indigo-900 text-base">
                                                                         {obs.scores && obs.scores[item.id] !== undefined ? obs.scores[item.id] : '-'}
                                                                     </td>
                                                                 </tr>
                                                             ))
                                                         )
                                                     )}
-                                                    {/* KEMASKINI 2: Paparkan Jumlah Markah Penuh di bahagian bawah jadual */}
                                                     <tr className="bg-indigo-100">
                                                         <td colSpan="2" className="p-3 text-right font-black text-indigo-900 text-sm uppercase tracking-wider">
                                                             Jumlah Skor Diperoleh
@@ -1566,3 +1579,4 @@
     </script>
 </body>
 </html>
+```eof
