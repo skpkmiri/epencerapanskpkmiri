@@ -66,6 +66,8 @@
         }
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    <!-- KEMASKINI 2: Tambah fon Dancing Script untuk E-Sign -->
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
     
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #eef2ff; } 
@@ -88,13 +90,16 @@
             animation: fadeIn 0.4s ease-out forwards;
         }
 
+        /* KEMASKINI 3: Penambahbaikan fungsi cetakan PDF */
         @media print {
             .no-print { display: none !important; }
             .print-only { display: block !important; }
             body, html { background-color: white !important; overflow: visible !important; height: auto !important; }
             #root { margin: 0; padding: 0; overflow: visible !important; height: auto !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .print-break-inside-avoid { break-inside: avoid; }
             .print-break-before { page-break-before: always; }
+            .fixed.inset-0 { position: absolute !important; }
         }
     </style>
 </head>
@@ -399,7 +404,8 @@
                     setDb(prev => ({ ...prev, audit_logs: data }));
                 }, (err) => console.error(err));
 
-                const unsubTeachers = onSnapshot(teachersRef, async (snapshot) => {
+                // KEMASKINI 1: Buang logik CSV dan hanya sinkronisasikan dari pangkalan data Firebase
+                const unsubTeachers = onSnapshot(teachersRef, (snapshot) => {
                     let data = snapshot.docs.map(doc => doc.data());
                     if (data.length > 0) {
                         data.sort((a, b) => {
@@ -407,54 +413,7 @@
                         });
                         setDb(prev => ({ ...prev, teachers: data }));
                     } else {
-                        try {
-                            const res = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vQlw9DX7KTwL6BBPxhAUJ6TWAwfNVylx_wC6FuE2LgJE588pMkmZZegTtjnbFVU7FHwYYZ5EEOvYOen/pub?output=csv");
-                            if (res.ok) {
-                                const csvText = await res.text();
-                                const rows = csvText.split('\n');
-                                const headers = rows[0].split(',');
-                                
-                                const nameIdx = headers.findIndex(h => h.toLowerCase().includes('nama'));
-                                const icIdx = headers.findIndex(h => h.toLowerCase().includes('ic') || h.toLowerCase().includes('kp'));
-                                const posIdx = headers.findIndex(h => h.toLowerCase().includes('jawatan'));
-                                const optIdx = headers.findIndex(h => h.toLowerCase().includes('opsyen'));
-
-                                const csvTeachers = [];
-                                for (let i = 1; i < rows.length; i++) {
-                                    if (!rows[i].trim()) continue;
-                                    const cols = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                                    if (cols.length > nameIdx && cols[nameIdx]) {
-                                        const rawName = cols[nameIdx].replace(/['"\r]/g, '').replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
-                                        if (rawName.length > 3) {
-                                            const newTeacher = {
-                                                id: 'T' + generateUUID().substring(0,6),
-                                                user_id: null,
-                                                school_id: 'S001',
-                                                teacher_name: rawName,
-                                                staff_id: 'STF-' + i,
-                                                ic_no: icIdx !== -1 && cols[icIdx] ? cols[icIdx].replace(/['"\r]/g, '').trim() : '-',
-                                                position: posIdx !== -1 && cols[posIdx] ? cols[posIdx].replace(/['"\r]/g, '').trim() : 'Guru',
-                                                option: optIdx !== -1 && cols[optIdx] ? cols[optIdx].replace(/['"\r]/g, '').trim() : '-',
-                                                specialization: '-',
-                                                class_name: '-',
-                                                subject: '-',
-                                                is_active: true,
-                                                sort_order: i 
-                                            };
-                                            csvTeachers.push(newTeacher);
-                                            setDoc(fireDoc(fireDB, 'teachers', newTeacher.id), newTeacher);
-                                        }
-                                    }
-                                }
-                                if (csvTeachers.length > 0) {
-                                    setDb(prev => ({ ...prev, teachers: csvTeachers }));
-                                    return;
-                                }
-                            }
-                        } catch (e) {
-                            console.error("Gagal baca CSV Google Sheets, gunakan Mock data:", e);
-                        }
-                        
+                        // Jika tiada data dalam Firebase, wujudkan dummy data
                         MOCK_TEACHERS.forEach(t => {
                             setDoc(fireDoc(fireDB, 'teachers', t.id), t);
                         });
@@ -1380,7 +1339,9 @@
                                 </div>
 
                                 <div className="p-8 md:p-12 print:p-0 bg-white">
-                                    <div className="text-center border-b-4 border-double border-indigo-900 pb-6 mb-8">
+                                    {/* KEMASKINI 3: Tambah Logo pada bahagian Header di dalam cetakan */}
+                                    <div className="text-center border-b-4 border-double border-indigo-900 pb-6 mb-8 flex flex-col items-center">
+                                        <img src="logo.png" alt="Logo SKPK Miri" className="w-24 h-24 mb-4 object-contain shadow-sm rounded-full border-2 border-indigo-100" onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/100x100/ffffff/4f46e5?text=SKPK"; }} />
                                         <h1 className="text-2xl md:text-3xl font-black uppercase tracking-wider mb-2 text-indigo-950">SK Pendidikan Khas Miri</h1>
                                         <h2 className="text-lg md:text-xl font-bold text-indigo-800">Instrumen Pemantauan PdPc (eSTANDARD 4 PdPc GPkhas)</h2>
                                         <p className="text-indigo-600 mt-2 font-bold bg-indigo-50 inline-block px-4 py-1 rounded-full">{obs.session_name}</p>
@@ -1408,14 +1369,23 @@
                                         </p>
                                     </div>
 
-                                    <div className="mt-20 pt-8 flex justify-between px-4 md:px-10">
-                                        <div className="text-center">
-                                            <div className="border-b-2 border-indigo-900 w-48 md:w-56 mb-3"></div>
+                                    {/* KEMASKINI 2 & 3: Tambah e-Sign menggunakan Dancing Script dan print-break-inside-avoid */}
+                                    <div className="mt-20 pt-12 flex justify-between px-4 md:px-10 print-break-inside-avoid">
+                                        <div className="text-center relative">
+                                            {/* Paparan E-Signature (Menggunakan fon Cursive) */}
+                                            <div className="absolute -top-12 left-0 right-0 text-3xl text-indigo-800/80 -rotate-2" style={{ fontFamily: "'Dancing Script', cursive" }}>
+                                                {obs.observer_name || currentUser.full_name}
+                                            </div>
+                                            <div className="border-b-2 border-indigo-900 w-48 md:w-56 mb-3 relative z-10"></div>
                                             <div className="font-black text-indigo-900 text-sm">Tandatangan Pencerap</div>
                                             <div className="text-xs mt-1 text-indigo-500 font-bold">{obs.observer_name || currentUser.full_name}</div>
                                         </div>
-                                        <div className="text-center">
-                                            <div className="border-b-2 border-indigo-900 w-48 md:w-56 mb-3"></div>
+                                        <div className="text-center relative">
+                                            {/* Paparan E-Signature (Menggunakan fon Cursive) */}
+                                            <div className="absolute -top-12 left-0 right-0 text-3xl text-indigo-800/80 -rotate-2" style={{ fontFamily: "'Dancing Script', cursive" }}>
+                                                {obs.teacherName}
+                                            </div>
+                                            <div className="border-b-2 border-indigo-900 w-48 md:w-56 mb-3 relative z-10"></div>
                                             <div className="font-black text-indigo-900 text-sm">Tandatangan Dicerap</div>
                                             <div className="text-xs mt-1 text-indigo-500 font-bold">{obs.teacherName}</div>
                                         </div>
