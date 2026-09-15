@@ -89,23 +89,20 @@
             animation: fadeIn 0.4s ease-out forwards;
         }
 
-        /* KEMASKINI CETAKAN: Baiki isu saiz terlalu besar dan jarak di sebelah kanan */
         @media print {
             @page {
                 size: A4 portrait; 
-                margin: 0.5cm; /* Kecilkan margin muka surat */
+                margin: 0.5cm; 
             }
             body, html { 
                 background-color: white !important; 
                 margin: 0 !important;
                 padding: 0 !important;
-                /* Gunakan ciri font bersaiz statik untuk elak membesar */
                 font-size: 11pt !important;
             }
             .no-print { display: none !important; }
             .print-only { display: block !important; }
             
-            /* Tetapan spesifik pembalut utama supaya "fit to page" dengan kemas */
             #root, .fixed.inset-0, .bg-white.w-full.max-w-5xl { 
                 position: static !important;
                 width: 100% !important;
@@ -117,15 +114,13 @@
                 border-radius: 0 !important;
                 transform: none !important;
                 overflow: visible !important;
-                display: block !important; /* Timpa flex behavior yang mungkin sempitkan kontena */
+                display: block !important; 
             }
 
-            /* Membuang jarak/padding yang berlebihan dari modal semasa cetakan */
             .print\:p-6, .print\:py-0 {
                 padding: 0 !important;
             }
             
-            /* Menyesuaikan grid agar lebih kemas dan mampat */
             .grid {
                 display: grid !important;
             }
@@ -134,14 +129,11 @@
                 gap: 0.5rem !important;
             }
             
-            /* Memastikan warna latar belakang dan teks dipelihara dalam cetakan */
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             
-            /* Mengelakkan elemen terpotong (page break) pada lokasi yang salah */
             .print-break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
             .print-break-before { break-before: page; page-break-before: always; }
 
-            /* Menyelaraskan teks tandatangan e-Sign jika terlalu besar */
             .text-3xl {
                 font-size: 24pt !important;
             }
@@ -746,6 +738,7 @@
                                                 <option value="MOHAMAD ABIDIN BIN SIPEK">MOHAMAD ABIDIN BIN SIPEK</option>
                                                 <option value="LING MEE CHOO">LING MEE CHOO</option>
                                                 <option value="SALIHIN BIN AHMAD">SALIHIN BIN AHMAD</option>
+                                                <option value="NUR HIDAYU BINTI YUSOP">NUR HIDAYU BINTI YUSOP</option>
                                             </select>
                                         </div>
                                         <div>
