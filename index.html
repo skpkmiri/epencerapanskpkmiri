@@ -396,6 +396,7 @@
             const [isCloudReady, setIsCloudReady] = useState(false);
             const [viewingReport, setViewingReport] = useState(null);
             const [toastMessage, setToastMessage] = useState(null);
+            const [editingObservationId, setEditingObservationId] = useState(null);
 
             const currentUser = { id: generateUUID(), email: 'abidin@sekolah.edu.my', full_name: 'Mohamad Abidin bin Sipek (GPK Pentadbiran)', role: 'PENTADBIR', school_id: 'S001', is_active: true };
 
@@ -499,9 +500,17 @@
                 }
             };
 
-            const handleSaveObservation = async (obsData) => {
-                const obsId = generateUUID();
+            const handleSaveObservation = async (obsData, existingId = null) => {
+                const obsId = existingId || generateUUID();
                 
+                let createdAt = new Date().toISOString();
+                if (existingId) {
+                    const existingObs = db.observations.find(o => o.id === existingId);
+                    if (existingObs && existingObs.created_at) {
+                        createdAt = existingObs.created_at;
+                    }
+                }
+
                 const newObservation = {
                     id: obsId,
                     school_id: currentUser.school_id,
@@ -513,7 +522,7 @@
                     class_name: obsData.class_name,
                     subject: obsData.subject,
                     topic: obsData.topic,
-                    learning_objectives: obsData.learning_objectives,
+                    learning_objectives: obsData.learning_objectives || '',
                     student_count: parseInt(obsData.student_count) || 0,
                     start_time: obsData.start_time,
                     end_time: obsData.end_time,
@@ -524,7 +533,7 @@
                     performance_level: obsData.performance_level,
                     general_comment: obsData.general_comment,
                     teacher_comment: null,
-                    created_at: new Date().toISOString(),
+                    created_at: createdAt,
                     updated_at: new Date().toISOString(),
                     teacherName: obsData.teacherName,
                     scores: obsData.scores
@@ -534,9 +543,9 @@
                     const { db: fireDB, doc: fireDoc, setDoc } = window.firebaseAPI;
                     try {
                         await setDoc(fireDoc(fireDB, 'observations', obsId), newObservation);
-                        logAudit('CREATE', 'observations', obsId, newObservation);
+                        logAudit(existingId ? 'UPDATE' : 'CREATE', 'observations', obsId, newObservation);
                         
-                        setToastMessage({ type: 'success', text: 'Rekod berjaya disimpan ke awan!' });
+                        setToastMessage({ type: 'success', text: `Rekod berjaya ${existingId ? 'dikemaskini' : 'disimpan'} ke awan!` });
                         setTimeout(() => setToastMessage(null), 3000);
                         setActiveTab('history');
                     } catch (e) {
@@ -544,12 +553,21 @@
                         setToastMessage({ type: 'error', text: 'Ralat menyimpan data ke awan.' });
                     }
                 } else {
-                    setDb(prev => ({ ...prev, observations: [newObservation, ...prev.observations] }));
-                    logAudit('CREATE', 'observations', obsId, newObservation);
-                    setToastMessage({ type: 'success', text: 'Disimpan (Mod Offline). Penyegerakan tertunda.' });
+                    setDb(prev => {
+                        let updatedObs;
+                        if (existingId) {
+                            updatedObs = prev.observations.map(o => o.id === existingId ? newObservation : o);
+                        } else {
+                            updatedObs = [newObservation, ...prev.observations];
+                        }
+                        return { ...prev, observations: updatedObs };
+                    });
+                    logAudit(existingId ? 'UPDATE' : 'CREATE', 'observations', obsId, newObservation);
+                    setToastMessage({ type: 'success', text: `Rekod ${existingId ? 'dikemaskini' : 'disimpan'} (Mod Offline). Penyegerakan tertunda.` });
                     setTimeout(() => setToastMessage(null), 3000);
                     setActiveTab('history');
                 }
+                setEditingObservationId(null);
             };
 
             const DashboardContent = () => {
@@ -669,6 +687,45 @@
 
                 const [scores, setScores] = useState({});
 
+                useEffect(() => {
+                    if (editingObservationId) {
+                        const obs = db.observations.find(o => o.id === editingObservationId);
+                        if (obs) {
+                            setFormData({
+                                teacher_id: obs.teacher_id || '',
+                                observer_name: obs.observer_name || '',
+                                observation_date: obs.observation_date || '',
+                                session_name: obs.session_name || '',
+                                class_name: obs.class_name || '',
+                                subject: obs.subject || '',
+                                topic: obs.topic || '',
+                                learning_objectives: obs.learning_objectives || '',
+                                student_count: obs.student_count || '',
+                                start_time: obs.start_time || '',
+                                end_time: obs.end_time || '',
+                                general_comment: obs.general_comment || ''
+                            });
+                            setScores(obs.scores || {});
+                        }
+                    } else {
+                        setFormData({
+                            teacher_id: '',
+                            observer_name: '', 
+                            observation_date: new Date().toISOString().split('T')[0],
+                            session_name: 'Pencerapan Pertama',
+                            class_name: '',
+                            subject: '',
+                            topic: '',
+                            learning_objectives: '',
+                            student_count: '',
+                            start_time: '08:00',
+                            end_time: '09:00',
+                            general_comment: ''
+                        });
+                        setScores({});
+                    }
+                }, [editingObservationId]);
+
                 const handleFormChange = (e) => {
                     setFormData({ ...formData, [e.target.name]: e.target.value });
                 };
@@ -701,14 +758,16 @@
                         totalScore: currentTotalScore,
                         percentageFloat: parseFloat(percentage),
                         performance_level: performanceLevel
-                    });
+                    }, editingObservationId);
                 };
 
                 return (
                     <div className="p-4 md:p-8 animate-fade-in relative pb-32 max-w-5xl mx-auto">
                         
                         <div className="flex justify-between items-end mb-6 pb-2">
-                            <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Borang Pencerapan PdPc Baharu</h2>
+                            <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
+                                {editingObservationId ? 'Kemaskini Pencerapan PdPc' : 'Borang Pencerapan PdPc Baharu'}
+                            </h2>
                             <span className="text-sm text-indigo-600 font-bold bg-indigo-100 px-3 py-1 rounded-full shadow-sm">eSTANDARD 4 PdPc GPkhas</span>
                         </div>
 
@@ -893,7 +952,7 @@
                                     disabled={answeredItemsCount < totalItems}
                                     className={`px-6 py-3 rounded-xl text-sm font-black flex items-center gap-2 transition-all shadow-md ${answeredItemsCount === totalItems ? 'bg-gradient-to-r from-primary to-accent text-white hover:shadow-lg hover:scale-105 cursor-pointer' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
                                 >
-                                    <i className="ph ph-floppy-disk text-xl"></i> Simpan Pencerapan
+                                    <i className="ph ph-floppy-disk text-xl"></i> {editingObservationId ? 'Kemaskini Pencerapan' : 'Simpan Pencerapan'}
                                 </button>
                             </div>
                         </form>
@@ -1020,7 +1079,7 @@
                                             </div>
                                         </div>
                                     ) : (
-                                        <button onClick={() => setBulkDeleteConfirm(true)} className="w-full md:w-auto px-5 py-2 bg-white text-rose-500 border border-rose-200 text-sm font-bold rounded-xl hover:bg-rose-50 flex items-center justify-center gap-2 shadow-sm transition-all whitespace-nowrap">
+                                        <button onClick={() => setBulkDeleteConfirm(true)} className="w-full md:w-auto px-5 py-2 bg-white text-rose-50 border border-rose-200 text-sm font-bold rounded-xl hover:bg-rose-50 flex items-center justify-center gap-2 shadow-sm transition-all whitespace-nowrap">
                                             <i className="ph ph-trash text-lg"></i>
                                             Padam Pilihan
                                         </button>
@@ -1070,7 +1129,10 @@
                                                                     <i className="ph ph-printer text-xl"></i>
                                                                 </button>
                                                                 
-                                                                <button className="p-2 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-500 hover:text-white transition-all shadow-sm" title="Kemaskini">
+                                                                <button onClick={() => {
+                                                                    setEditingObservationId(obs.id);
+                                                                    setActiveTab('baru');
+                                                                }} className="p-2 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-500 hover:text-white transition-all shadow-sm" title="Kemaskini">
                                                                     <i className="ph ph-pencil-simple text-xl"></i>
                                                                 </button>
                                                                 
@@ -1522,7 +1584,13 @@
                             {navItems.map(item => (
                                 <button 
                                     key={item.id}
-                                    onClick={() => { setActiveTab(item.id); setIsSidebarOpen(false); }}
+                                    onClick={() => { 
+                                        setActiveTab(item.id); 
+                                        setIsSidebarOpen(false); 
+                                        if (item.id === 'baru') {
+                                            setEditingObservationId(null);
+                                        }
+                                    }}
                                     className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 font-bold ${activeTab === item.id ? 'bg-white text-accent shadow-xl scale-105' : 'text-indigo-100 hover:bg-white/20 hover:pl-6'}`}
                                 >
                                     <i className={`ph ${item.icon} text-xl ${activeTab === item.id ? 'text-accent' : 'text-indigo-200'}`}></i>
@@ -1572,4 +1640,3 @@
     </script>
 </body>
 </html>
-```eof
